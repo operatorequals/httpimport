@@ -25,19 +25,33 @@ except :
 	from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.5.0'
-
+__version__ = '0.5.1'
+__github__ = 'https://github.com/operatorequals/httpimport'
 
 FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
 
+'''
+To enable debug logging set:
+
+	httpimport_logger = logging.getLogger('httpimport')
+	httpimport_logger.setLevel(logging.DEBUG)
+
+in your script.
+'''
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 logger.setLevel(logging.WARN)
+# logger.setLevel(logging.DEBUG)
 
 
 class HttpImporter(object):
+	"""
+The class that implements the Importer API. Contains the "find_module" and "load_module" methods.
+The 'modules' parameter is a list, with the names of the modules/packages that can be imported from the given URL.
+The 'base_url' parameter is a string containing the URL where the repository/directory is served through HTTP/S
 
+It is better to not use this class directly, but through its wrappers 'remote_repo' and 'github_repo', that automatically load and unload this class' objects to the 'sys.meta_path' list.
+	"""
 	def __init__(self, modules, base_url):
 		self.module_names = modules
 		self.base_url = base_url+'/'
@@ -126,12 +140,20 @@ class HttpImporter(object):
 
 @contextmanager
 def remote_repo( modules, base_url = 'http://localhost:8000/' ):	# Default 'python -m SimpleHTTPServer' URL
+	'''
+Context Manager that provides remote import functionality through a URL.
+The parameters are the same as the HttpImporter class contructor.
+	'''
 	importer = add_remote_repo( modules, base_url )
 	yield
 	remove_remote_repo(base_url)
 
 
 def add_remote_repo( modules, base_url = 'http://localhost:8000/' ) :	# Default 'python -m SimpleHTTPServer' URL
+	'''
+Function that creates and adds to the 'sys.meta_path' an HttpImporter object.
+The parameters are the same as the HttpImporter class contructor.
+	'''
 	if not base_url.startswith('https') :
 		logger.warning("[!] Using plain HTTP URLs ('%s') can be a security hazard!" % base_url)
 	importer = HttpImporter( modules, base_url )
@@ -140,6 +162,9 @@ def add_remote_repo( modules, base_url = 'http://localhost:8000/' ) :	# Default 
 
 
 def remove_remote_repo( base_url ) :
+	'''
+Function that creates and removes from the 'sys.meta_path' an HttpImporter object given its HTTP/S URL.
+	'''
 	for importer in sys.meta_path :
 		try :
 			if importer.base_url[:-1] == base_url : # an extra '/' is always added
@@ -150,11 +175,22 @@ def remove_remote_repo( base_url ) :
 
 
 def __create_github_url( username, repo, branch = 'master' ) :
+	'''
+Creates the HTTPS URL that points to the raw contents of a github repository.
+	'''
 	github_raw_url = 'https://raw.githubusercontent.com/{user}/{repo}/{branch}/'
 	return github_raw_url.format(user = username, repo = repo, branch = branch)
 
 
 def add_github_repo( username = None, repo = None, module = None, branch = None, commit = None ) :
+	'''
+Function that creates and adds to the 'sys.meta_path' an HttpImporter object equipped with a Github URL.
+The 'username' parameter defines the Github username which is the repository's owner.
+The 'repo' parameter defines the name of the repo that contains the modules/packages to be imported.
+The 'module' parameter is optional and is a list containing the modules/packages that are available in the chosen Github repository.
+If it is not provided, it defaults to the repositories name, as it is common that the a Python repository at "github.com/someuser/somereponame" contains a module/package of "somereponame".
+The 'branch' and 'commit' parameters cannot be both populated at the same call. They specify the branch (last commit) or specific commit, that should be served.
+	'''
 	if username == None or repo == None :
 		raise Error("'username' and 'repo' parameters cannot be None")
 	if commit and branch : raise Error("'branch' and 'commit' parameters cannot be both set!")
@@ -171,6 +207,10 @@ def add_github_repo( username = None, repo = None, module = None, branch = None,
 
 @contextmanager
 def github_repo( username = None, repo = None, module = None, branch = None, commit = None ) :
+	'''
+Context Manager that provides import functionality from Github repositories through HTTPS.
+The parameters are the same as the 'add_github_repo' function.
+	'''
 	importer = add_github_repo( username, repo, module = module, branch = branch, commit = commit )
 	yield
 	url = __create_github_url( username, repo, branch )
