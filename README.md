@@ -75,7 +75,7 @@ Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
 ImportError: No module named test_package
 >>>
->>> from httimport import addRemoteRepo, removeRemoteRepo
+>>> from httpimport import addRemoteRepo, removeRemoteRepo
 >>> # In the given URL the 'test_package/' is available
 >>> addRemoteRepo(['test_package'], 'http://localhost:8000/') #  
 >>> import test_package
