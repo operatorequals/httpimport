@@ -13,7 +13,7 @@ from httpimport import remote_repo
 try :
 	PORT = int(sys.argv[1])
 except :
-	PORT = 8001
+	PORT = 8000
 
 Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
 

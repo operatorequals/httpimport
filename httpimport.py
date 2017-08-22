@@ -39,7 +39,7 @@ class HttpImporter(object):
  
     def __init__(self, modules, base_url):
         self.module_names = modules
-        self.base_url = base_url
+        self.base_url = base_url+'/'
 
 
     def find_module(self, fullname, path=None):
@@ -139,8 +139,11 @@ def addRemoteRepo( modules, base_url = 'http://localhost:8000/' ) :    # Default
 def removeRemoteRepo( base_url ) :
     for importer in sys.meta_path :
         try :
-            if importer.base_url == base_url :
+            if importer.base_url[:-1] == base_url : # an extra '/' is always added
                 sys.meta_path.remove( importer )
                 return True
         except Exception as e :
                 return False
+
+
+__all__ = ['remote_repo', 'addRemoteRepo', 'removeRemoteRepo', 'HttpImporter']
