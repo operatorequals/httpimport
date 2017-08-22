@@ -155,6 +155,6 @@ John Torakis - operatorequals
 ### Life suddenly got simpler for Python module testing!!! 
 Imagine the breeze of testing _Pull Requests_ and packages that you aren't sure they will work for you!
 
-##### Did I hear you say "Staging protocol for [covertutils](https://github.com/operatorequals/covertutils)"?
+##### Did I hear you say "Staging protocol for [covertutils](https://github.com/operatorequals/covertutils) backdoors"?
 
 
