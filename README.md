@@ -126,6 +126,35 @@ Class and method loaded
 
 ```
 
+## The _Github_ Use Case!
 
+Such HTTP Servers (serving Python packages in a _directory structured way_) can be found in the wild, not only created with `SimpleHTTPServer`.
+**Github repos can serve as Python HTTP Repos as well!!!**
+
+### Here is an example with my beloved `covertutils` project:
+```python
+>>> 
+>>> import covertutils
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ImportError: No module named covertutils
+>>>	# covertutils is not available through normal import!
+>>>
+>>> covertutils_url = 'https://raw.githubusercontent.com/operatorequals/covertutils/master/'
+>>> 
+>>> from httpimport import remote_repo
+>>> 
+>>> with remote_repo(['covertutils'], covertutils_url) :
+...     import covertutils
+... 
+>>> print covertutils.__author__
+John Torakis - operatorequals
+```
+
+#### And no data touches the disk, nor any virtual environment. The import happens just to the running Python process!
+### Life suddenly got simpler for Python module testing!!! 
+Imagine the breeze of testing _Pull Requests_ and packages that you aren't sure they will work for you!
 
 ##### Did I hear you say "Staging protocol for [covertutils](https://github.com/operatorequals/covertutils)"?
+
+
