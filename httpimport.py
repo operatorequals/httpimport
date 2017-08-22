@@ -152,7 +152,12 @@ def __create_github_url( username, repo, branch = 'master' ) :
 	return github_raw_url.format(user = username, repo = repo, branch = branch)
 
 
-def add_github_repo( username, repo, module = None, branch = 'master' ) :
+def add_github_repo( username, repo, module = None, branch = None, commit = None ) :
+	if commit and branch : raise Error("'branch' and 'commit' arguments cannot be both set!")
+	if commit :
+		branch = commit
+	if not branch :
+		branch = 'master'
 	if not module :
 		module = repo
 	url = __create_github_url( username, repo, branch )
@@ -160,8 +165,9 @@ def add_github_repo( username, repo, module = None, branch = 'master' ) :
 
 
 @contextmanager
-def github_repo( username, repo, module = None, branch = 'master' ) :
-	importer = add_github_repo(username, repo, module, branch )
+def github_repo( username, repo, module = None, branch = None, commit = None ) :
+
+	importer = add_github_repo(username, repo, module = module, branch = branch, commit = commit )
 	yield
 	url = __create_github_url( username, repo, branch )
 	remove_remote_repo( url )

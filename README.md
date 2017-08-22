@@ -165,7 +165,19 @@ John Torakis - operatorequals
 #### What about branches?
 ```python
 >>> from httpimport import github_repo
->>> with github_repo( 'operatorequals', 'covertutils', branches='py3_compatibility' ) : import covertutils
+>>> with github_repo( 'operatorequals', 'covertutils', branches='py3_compatibility' ) :
+...     import covertutils
+...
+>>> covertutils.__author__
+'John Torakis - operatorequals'
+>>>
+```
+
+#### And ad-hoc commits too?
+```python
+>>> from httpimport import github_repo
+>>> with github_repo( 'operatorequals', 'covertutils', commit='cf3f78c77c437edf2c291bd5b4ed27e0a93e6a77' ) :
+...     import covertutils
 ...
 >>> covertutils.__author__
 'John Torakis - operatorequals'
