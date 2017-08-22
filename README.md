@@ -1,9 +1,9 @@
 # httpimport
-Module for _remote_ _in-memory_ Python _package/module_ loading _through HTTP_
+Module for _remote_ _in-memory_ Python _package/module_ loading _through HTTP/S_
 
 A feature that _Python2/3_ misses and has become popular in other languages is the remote load of packages/modules.
 
-The `httpimport` module lets a developer to remotely import any package/module through plain HTTP.
+The `httpimport` module lets a developer to remotely import any package/module through plain HTTP or HTTPS.
 
 ### Example
 
@@ -129,7 +129,7 @@ Class and method loaded
 ## The _Github_ Use Case!
 
 Such HTTP Servers (serving Python packages in a _directory structured way_) can be found in the wild, not only created with `SimpleHTTPServer`.
-**Github repos can serve as Python HTTP Repos as well!!!**
+**Github repos can serve as Python HTTPS Repos as well!!!**
 
 ### Here is an example with my beloved `covertutils` project:
 ```python
