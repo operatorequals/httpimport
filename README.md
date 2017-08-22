@@ -190,10 +190,15 @@ John Torakis - operatorequals
 Imagine the breeze of testing _Pull Requests_ and packages that you aren't sure they will work for you!
 
 
+
+
+
 ## Beware: **Huge Security Implications!**
 _Using the `httpimport` with **HTTP URLs** is highly discouraged outside the `localhost` interface!_
 As HTTP traffic isn't encrypted and/or integrity checked (_unlike HTTPS_), it is trivial for a remote attacker to intercept the HTTP responses (via an _ARP MiTM_ probably), and add arbitrary _Python_ code to the downloaded _packages/modules_. This will directly result in Remote Code Execution to your current user's context!
 #### You have been warned! Use HTTPS with `httpimport`!
+
+
 
 
 ##### Did I hear you say "Staging protocol for [covertutils](https://github.com/operatorequals/covertutils) backdoors"?
