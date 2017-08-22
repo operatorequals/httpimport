@@ -9,7 +9,7 @@ The `httpimport` module lets a developer to remotely import any package/module t
 
 Using the `SimpleHTTPServer`, a whole directory can be served through HTTP as follows:
 
-```bash 
+```bash
 user@hostname:/tmp/test_directory$ ls -R
 .:
 test_package
@@ -30,7 +30,7 @@ def dummy_func() : return 'Function Loaded'
 
 
 class dummy_class :
-	
+
 	def dummy_method(self) : return 'Class and method loaded'
 
 
@@ -58,14 +58,14 @@ test_package
 ./test_package:
 __init__.py  __init__.pyc  module1.py  module2.py
 
-user@hostname:/tmp/test_directory$ 
-user@hostname:/tmp/test_directory$ python -m SimpleHTTPServer 
+user@hostname:/tmp/test_directory$
+user@hostname:/tmp/test_directory$ python -m SimpleHTTPServer
 Serving HTTP on 0.0.0.0 port 8000 ...
 
 ```
 
 ### Importing Remotely
-#### `addRemoteRepo()` and `removeRemoteRepo()`
+#### `add_remote_repo()` and `remove_remote_repo()`
 
 These 2 functions will _add_ and _remove_ to the default `sys.meta_path` custom `HttpImporter` objects, given the URL they will look for packages/modules and a list of packages/modules its one can serve.
 
@@ -75,12 +75,12 @@ Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
 ImportError: No module named test_package
 >>>
->>> from httpimport import addRemoteRepo, removeRemoteRepo
+>>> from httpimport import add_remote_repo, remove_remote_repo
 >>> # In the given URL the 'test_package/' is available
->>> addRemoteRepo(['test_package'], 'http://localhost:8000/') #  
+>>> add_remote_repo(['test_package'], 'http://localhost:8000/') #  
 >>> import test_package
 >>>
->>> removeRemoteRepo('http://localhost:8000/')
+>>> remove_remote_repo('http://localhost:8000/')
 >>> import test_package.module1
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
@@ -93,11 +93,11 @@ _Adding_ and _removing_ Remote Repos can be a pain, _specially_ if there are pac
 
 ```python
 >>> from httpimport import remote_repo
->>> 
->>> 
+>>>
+>>>
 >>> with remote_repo(['test_package'], 'http://localhost:8000/') :
 ...     from test_package import module1
-... 
+...
 >>>
 >>> from test_package import module2
 Traceback (most recent call last):
@@ -115,7 +115,7 @@ ImportError: cannot import name module2
 The `test.py` file contains a minimal test. Try changing working directories and package names and see what happens...
 
 ```bash
-$ python test.py 
+$ python test.py
 serving at port 8000
 127.0.0.1 - - [22/Aug/2017 17:36:44] code 404, message File not found
 127.0.0.1 - - [22/Aug/2017 17:36:44] "GET /test_package/module1/__init__.py HTTP/1.1" 404 -
@@ -133,7 +133,7 @@ Such HTTP Servers (serving Python packages in a _directory structured way_) can 
 
 ### Here is an example with my beloved `covertutils` project:
 ```python
->>> 
+>>>
 >>> import covertutils
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
@@ -141,20 +141,47 @@ ImportError: No module named covertutils
 >>>	# covertutils is not available through normal import!
 >>>
 >>> covertutils_url = 'https://raw.githubusercontent.com/operatorequals/covertutils/master/'
->>> 
+>>>
 >>> from httpimport import remote_repo
->>> 
+>>>
 >>> with remote_repo(['covertutils'], covertutils_url) :
 ...     import covertutils
-... 
+...
 >>> print covertutils.__author__
 John Torakis - operatorequals
 ```
 
+
+### The **dedicated** `github_repo()` context:
+```python
+>>> from httpimport import github_repo
+>>> with github_repo( 'operatorequals', 'covertutils', ) :
+...     import covertutils
+...
+>>> covertutils.__author__
+'John Torakis - operatorequals'
+>>>
+```
+#### What about branches?
+```
+>>> from httpimport import github_repo
+>>> with github_repo( 'operatorequals', 'covertutils', branches ) : import covertutils
+...
+>>> covertutils.__author__
+'John Torakis - operatorequals'
+>>>
+```
+
+
 #### And no data touches the disk, nor any virtual environment. The import happens just to the running Python process!
-### Life suddenly got simpler for Python module testing!!! 
+### Life suddenly got simpler for Python module testing!!!
 Imagine the breeze of testing _Pull Requests_ and packages that you aren't sure they will work for you!
 
+
+## Beware: **Huge Security Implications!**
+_Using the `httpimport` with **HTTP URLs** is highly discouraged outside the `localhost` interface!_
+As HTTP traffic isn't encrypted and/or integrity checked (_unlike HTTPS_), it is trivial for a remote attacker to intercept the HTTP responses (via an _ARP MiTM_ probably), and add arbitrary _Python_ code to the downloaded _packages/modules_. This will directly result in Remote Code Execution to your current user's context!
+#### You have been warned! Use HTTPS with `httpimport`!
+
+
 ##### Did I hear you say "Staging protocol for [covertutils](https://github.com/operatorequals/covertutils) backdoors"?
-
-

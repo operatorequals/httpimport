@@ -32,11 +32,12 @@ FORMAT = "%(message)s"
 logging.basicConfig(format=FORMAT)
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 logger.setLevel(logging.WARN)
 
 
 class HttpImporter(object):
- 
+
     def __init__(self, modules, base_url):
         self.module_names = modules
         self.base_url = base_url+'/'
@@ -61,7 +62,7 @@ class HttpImporter(object):
 
         logger.info("[*]Module/Package '%s' can be loaded!" % fullname)
         return self
- 
+
 
     def load_module(self, name):
         imp.acquire_lock()
@@ -116,27 +117,27 @@ class HttpImporter(object):
         mod.__path__ = ['/'.join(mod.__file__.split('/')[:-1])+'/']
         logger.debug( "[+] Ready to execute '%s' code" % name )
         sys.modules[name] = mod
-        exec(final_src, mod.__dict__)    
+        exec(final_src, mod.__dict__)
         logger.info("[+] '%s' imported succesfully!" % name)
         imp.release_lock()
         return mod
- 
+
 
 
 @contextmanager
 def remote_repo( modules, base_url = 'http://localhost:8000/' ):    # Default 'python -m SimpleHTTPServer' URL
-    importer = addRemoteRepo( modules, base_url )
+    importer = add_remote_repo( modules, base_url )
     yield
-    removeRemoteRepo(base_url)
+    remove_remote_repo(base_url)
 
 
-def addRemoteRepo( modules, base_url = 'http://localhost:8000/' ) :    # Default 'python -m SimpleHTTPServer' URL
+def add_remote_repo( modules, base_url = 'http://localhost:8000/' ) :    # Default 'python -m SimpleHTTPServer' URL
     importer = HttpImporter( modules, base_url )
     sys.meta_path.append( importer )
     return importer
 
 
-def removeRemoteRepo( base_url ) :
+def remove_remote_repo( base_url ) :
     for importer in sys.meta_path :
         try :
             if importer.base_url[:-1] == base_url : # an extra '/' is always added
@@ -146,4 +147,34 @@ def removeRemoteRepo( base_url ) :
                 return False
 
 
-__all__ = ['remote_repo', 'addRemoteRepo', 'removeRemoteRepo', 'HttpImporter']
+def __create_github_url( username, repo, branch = 'master' ) :
+	github_raw_url = 'https://raw.githubusercontent.com/{user}/{repo}/{branch}/'
+	return github_raw_url.format(user = username, repo = repo, branch = branch)
+
+
+def add_github_repo( username, repo, module = None, branch = 'master' ) :
+	if not module :
+		module = repo
+	url = __create_github_url( username, repo, branch )
+	return add_remote_repo( [module], url )
+
+
+@contextmanager
+def github_repo( username, repo, module = None, branch = 'master' ) :
+	importer = add_github_repo(username, repo, module, branch )
+	yield
+	url = __create_github_url( username, repo, branch )
+	remove_remote_repo( url )
+
+
+
+__all__ = [
+		'HttpImporter',
+
+		'remote_repo',
+		'add_remote_repo',
+		'remove_remote_repo',
+
+		'github_repo',
+		'add_github_repo',
+	]
