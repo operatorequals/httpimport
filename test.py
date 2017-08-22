@@ -1,40 +1,55 @@
-import SimpleHTTPServer
-import SocketServer
+try :
+	import SimpleHTTPServer
+	import SocketServer
+except ImportError:
+	import http.server
+	import socketserver
+
 import sys
 
 from threading import Thread
 from time import sleep
 
-from httpimport import remote_repo
+from httpimport import remote_repo, github_repo
+
+import unittest
+from random import randint
 
 
+class Test( unittest.TestCase ) :
 
-# ============== Setting up an HTTP server at 'http://localhost:8001/' in current directory
-try :
-	PORT = int(sys.argv[1])
-except :
-	PORT = 8000
+	def test_simple_HTTP(self) :
+		# ============== Setting up an HTTP server at 'http://localhost:8001/' in current directory
+		try :
+			PORT = int(sys.argv[1])
+		except :
+			PORT = randint(1025, 65535)
 
-Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+		try :
+			Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+			httpd = SocketServer.TCPServer(("", PORT), Handler)
+		except :
+			Handler = http.server.SimpleHTTPRequestHandler
+			httpd = socketserver.TCPServer(("", PORT), Handler)
+			
+		print ("Serving at port %d" % PORT)
 
-httpd = SocketServer.TCPServer(("", PORT), Handler)
+		http_thread = Thread( target = httpd.serve_forever, )
+		http_thread.daemon = True
 
-print "serving at port", PORT
+		# ============== Starting the HTTP server
+		http_thread.start()
 
-http_thread = Thread( target = httpd.serve_forever, )
-http_thread.daemon = True
+		# ============== Wait until HTTP server is ready
+		sleep(1)
 
-# ============== Starting the HTTP server
-http_thread.start()
+		with remote_repo(['test_package'], base_url = 'http://localhost:%d/' % PORT) :
+			from test_package import module1
 
-# ============== Wait until HTTP server is ready
-sleep(1)
-
-with remote_repo(['test_package'], base_url = 'http://localhost:%d/' % PORT) :
-	from test_package import module1
+		self.assertTrue(module1.dummy_str)	# If this point is reached then the module1 is imported succesfully!
 
 
-print ( module1.dummy_str )
-print ( module1.dummy_func() )
-dum_obj = module1.dummy_class()
-print ( dum_obj.dummy_method() )
+	def test_github_repo(self) :
+		with github_repo( 'operatorequals', 'covertutils', ) :
+			import covertutils
+		self.assertTrue(covertutils.__author__)	# If this point is reached then the module1 is imported succesfully!

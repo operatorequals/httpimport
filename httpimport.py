@@ -20,12 +20,12 @@ import logging
 
 from contextlib import contextmanager
 try :
-    from urllib2 import urlopen
+	from urllib2 import urlopen
 except :
-    from urllib.request import urlopen
+	from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.1.0'
+__version__ = '0.5.0'
 
 
 FORMAT = "%(message)s"
@@ -38,113 +38,115 @@ logger.setLevel(logging.WARN)
 
 class HttpImporter(object):
 
-    def __init__(self, modules, base_url):
-        self.module_names = modules
-        self.base_url = base_url+'/'
+	def __init__(self, modules, base_url):
+		self.module_names = modules
+		self.base_url = base_url+'/'
 
 
-    def find_module(self, fullname, path=None):
-        logger.debug("FINDER=================")
-        logger.debug("[!] Searching %s" % fullname)
-        logger.debug("[!] Path is %s" % path)
-        logger.info("[@]Checking if in domain >")
-        if fullname.split('.')[0] not in self.module_names : return None
+	def find_module(self, fullname, path=None):
+		logger.debug("FINDER=================")
+		logger.debug("[!] Searching %s" % fullname)
+		logger.debug("[!] Path is %s" % path)
+		logger.info("[@]Checking if in domain >")
+		if fullname.split('.')[0] not in self.module_names : return None
 
-        logger.info("[@]Checking if built-in >")
-        try :
-            loader = imp.find_module( fullname, path )
-            if loader : return None
-        except ImportError:
-            pass
-        logger.info("[@]Checking if it is name repetition >")
-        if fullname.split('.').count(fullname.split('.')[-1]) > 1 : return None
-
-
-        logger.info("[*]Module/Package '%s' can be loaded!" % fullname)
-        return self
+		logger.info("[@]Checking if built-in >")
+		try :
+			loader = imp.find_module( fullname, path )
+			if loader : return None
+		except ImportError:
+			pass
+		logger.info("[@]Checking if it is name repetition >")
+		if fullname.split('.').count(fullname.split('.')[-1]) > 1 : return None
 
 
-    def load_module(self, name):
-        imp.acquire_lock()
-        logger.debug("LOADER=================")
-        logger.debug( "[+] Loading %s" % name )
-        if name in sys.modules:
-            logger.info( '[+] Module "%s" already loaded!' % name )
-            imp.release_lock()
-            return sys.modules[name]
+		logger.info("[*]Module/Package '%s' can be loaded!" % fullname)
+		return self
 
-        if name.split('.')[-1] in sys.modules:
-            imp.release_lock()
-            logger.info('[+] Module "%s" loaded as a top level module!' % name)
-            return sys.modules[name.split('.')[-1]]
 
-        module_url = self.base_url + '%s.py'  % name.replace('.','/')
-        package_url = self.base_url + '%s/__init__.py'  % name.replace('.','/')
-        final_url = None
-        final_src = None
+	def load_module(self, name):
+		imp.acquire_lock()
+		logger.debug("LOADER=================")
+		logger.debug( "[+] Loading %s" % name )
+		if name in sys.modules:
+			logger.info( '[+] Module "%s" already loaded!' % name )
+			imp.release_lock()
+			return sys.modules[name]
 
-        try :
-            logger.debug("[+] Trying to import as package from: '%s'" % package_url)
-            package_src = urlopen(package_url).read()
-            final_src = package_src
-            final_url = package_url
-        except IOError as e:
-            package_src = None
-            logger.info( "[-] '%s' is not a package:" % name )
+		if name.split('.')[-1] in sys.modules:
+			imp.release_lock()
+			logger.info('[+] Module "%s" loaded as a top level module!' % name)
+			return sys.modules[name.split('.')[-1]]
 
-        if final_src == None :
-            try :
-                logger.debug("[+] Trying to import as module from: '%s'" % module_url)
-                module_src = urlopen(module_url).read()
-                final_src = module_src
-                final_url = module_url
-            except IOError as e:
-                module_src = None
-                logger.info( "[-] '%s' is not a module:" % name )
-                logger.warn( "[!] '%s' not found in HTTP repository. Moving to next Finder." % name )
-                imp.release_lock()
-                return None
+		module_url = self.base_url + '%s.py'  % name.replace('.','/')
+		package_url = self.base_url + '%s/__init__.py'  % name.replace('.','/')
+		final_url = None
+		final_src = None
 
-        logger.debug("[+] Importing '%s'" % name)
-        mod = imp.new_module(name)
-        mod.__loader__ = self
-        mod.__file__ = final_url
-        if not package_src :
-            mod.__package__ = name
-        else :
-            mod.__package__ = name.split('.')[0]
+		try :
+			logger.debug("[+] Trying to import as package from: '%s'" % package_url)
+			package_src = urlopen(package_url).read()
+			final_src = package_src
+			final_url = package_url
+		except IOError as e:
+			package_src = None
+			logger.info( "[-] '%s' is not a package:" % name )
 
-        mod.__path__ = ['/'.join(mod.__file__.split('/')[:-1])+'/']
-        logger.debug( "[+] Ready to execute '%s' code" % name )
-        sys.modules[name] = mod
-        exec(final_src, mod.__dict__)
-        logger.info("[+] '%s' imported succesfully!" % name)
-        imp.release_lock()
-        return mod
+		if final_src == None :
+			try :
+				logger.debug("[+] Trying to import as module from: '%s'" % module_url)
+				module_src = urlopen(module_url).read()
+				final_src = module_src
+				final_url = module_url
+			except IOError as e:
+				module_src = None
+				logger.info( "[-] '%s' is not a module:" % name )
+				logger.warning( "[!] '%s' not found in HTTP repository. Moving to next Finder." % name )
+				imp.release_lock()
+				return None
+
+		logger.debug("[+] Importing '%s'" % name)
+		mod = imp.new_module(name)
+		mod.__loader__ = self
+		mod.__file__ = final_url
+		if not package_src :
+			mod.__package__ = name
+		else :
+			mod.__package__ = name.split('.')[0]
+
+		mod.__path__ = ['/'.join(mod.__file__.split('/')[:-1])+'/']
+		logger.debug( "[+] Ready to execute '%s' code" % name )
+		sys.modules[name] = mod
+		exec(final_src, mod.__dict__)
+		logger.info("[+] '%s' imported succesfully!" % name)
+		imp.release_lock()
+		return mod
 
 
 
 @contextmanager
-def remote_repo( modules, base_url = 'http://localhost:8000/' ):    # Default 'python -m SimpleHTTPServer' URL
-    importer = add_remote_repo( modules, base_url )
-    yield
-    remove_remote_repo(base_url)
+def remote_repo( modules, base_url = 'http://localhost:8000/' ):	# Default 'python -m SimpleHTTPServer' URL
+	importer = add_remote_repo( modules, base_url )
+	yield
+	remove_remote_repo(base_url)
 
 
-def add_remote_repo( modules, base_url = 'http://localhost:8000/' ) :    # Default 'python -m SimpleHTTPServer' URL
-    importer = HttpImporter( modules, base_url )
-    sys.meta_path.append( importer )
-    return importer
+def add_remote_repo( modules, base_url = 'http://localhost:8000/' ) :	# Default 'python -m SimpleHTTPServer' URL
+	if not base_url.startswith('https') :
+		logger.warning("[!] Using plain HTTP URLs ('%s') can be a security hazard!" % base_url)
+	importer = HttpImporter( modules, base_url )
+	sys.meta_path.append( importer )
+	return importer
 
 
 def remove_remote_repo( base_url ) :
-    for importer in sys.meta_path :
-        try :
-            if importer.base_url[:-1] == base_url : # an extra '/' is always added
-                sys.meta_path.remove( importer )
-                return True
-        except Exception as e :
-                return False
+	for importer in sys.meta_path :
+		try :
+			if importer.base_url[:-1] == base_url : # an extra '/' is always added
+				sys.meta_path.remove( importer )
+				return True
+		except Exception as e :
+				return False
 
 
 def __create_github_url( username, repo, branch = 'master' ) :
@@ -152,8 +154,11 @@ def __create_github_url( username, repo, branch = 'master' ) :
 	return github_raw_url.format(user = username, repo = repo, branch = branch)
 
 
-def add_github_repo( username, repo, module = None, branch = None, commit = None ) :
-	if commit and branch : raise Error("'branch' and 'commit' arguments cannot be both set!")
+def add_github_repo( username = None, repo = None, module = None, branch = None, commit = None ) :
+	if username == None or repo == None :
+		raise Error("'username' and 'repo' parameters cannot be None")
+	if commit and branch : raise Error("'branch' and 'commit' parameters cannot be both set!")
+
 	if commit :
 		branch = commit
 	if not branch :
@@ -165,9 +170,8 @@ def add_github_repo( username, repo, module = None, branch = None, commit = None
 
 
 @contextmanager
-def github_repo( username, repo, module = None, branch = None, commit = None ) :
-
-	importer = add_github_repo(username, repo, module = module, branch = branch, commit = commit )
+def github_repo( username = None, repo = None, module = None, branch = None, commit = None ) :
+	importer = add_github_repo( username, repo, module = module, branch = branch, commit = commit )
 	yield
 	url = __create_github_url( username, repo, branch )
 	remove_remote_repo( url )
