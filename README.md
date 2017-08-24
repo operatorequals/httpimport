@@ -165,7 +165,7 @@ John Torakis - operatorequals
 #### What about branches?
 ```python
 >>> from httpimport import github_repo
->>> with github_repo( 'operatorequals', 'covertutils', branches='py3_compatibility' ) :
+>>> with github_repo( 'operatorequals', 'covertutils', branch='py3_compatibility' ) :
 ...     import covertutils
 ...
 >>> covertutils.__author__
