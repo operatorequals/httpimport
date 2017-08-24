@@ -174,6 +174,7 @@ John Torakis - operatorequals
 ```
 
 #### And ad-hoc commits too?
+What if you need to stick to a fixed -_known to work_- commit?
 ```python
 >>> from httpimport import github_repo
 >>> with github_repo( 'operatorequals', 'covertutils', commit='cf3f78c77c437edf2c291bd5b4ed27e0a93e6a77' ) :
