@@ -191,7 +191,31 @@ What if you need to stick to a fixed -_known to work_- commit?
 Imagine the breeze of testing _Pull Requests_ and packages that you aren't sure they will work for you!
 
 
-
+## Debugging...
+```python
+>>> from httpimport import *
+>>>
+>>> import logging
+>>> logging.getLogger('httpimport').setLevel(logging.DEBUG)
+>>>
+>>> with github_repo('operatorequals','covertutils') :
+...     import covertutils
+...
+FINDER=================
+[!] Searching covertutils
+[!] Path is None
+[@]Checking if in domain >
+[@]Checking if built-in >
+[@]Checking if it is name repetition >
+[*]Module/Package 'covertutils' can be loaded!
+LOADER=================
+[+] Loading covertutils
+[+] Trying to import as package from: 'https://raw.githubusercontent.com/operatorequals/covertutils/master//covertutils/__init__.py'
+[+] Importing 'covertutils'
+[+] Ready to execute 'covertutils' code
+[+] 'covertutils' imported succesfully!
+>>>
+```
 
 
 ## Beware: **Huge Security Implications!**
