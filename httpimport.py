@@ -99,8 +99,7 @@ It is better to not use this class directly, but through its wrappers 'remote_re
         final_src = None
 
         try:
-            logger.debug(
-                "[+] Trying to import as package from: '%s'" % package_url)
+            logger.debug("[+] Trying to import as package from: '%s'" % package_url)
             package_src = urlopen(package_url).read()
             final_src = package_src
             final_url = package_url
@@ -110,16 +109,14 @@ It is better to not use this class directly, but through its wrappers 'remote_re
 
         if final_src == None:
             try:
-                logger.debug(
-                    "[+] Trying to import as module from: '%s'" % module_url)
+                logger.debug("[+] Trying to import as module from: '%s'" % module_url)
                 module_src = urlopen(module_url).read()
                 final_src = module_src
                 final_url = module_url
             except IOError as e:
                 module_src = None
                 logger.info("[-] '%s' is not a module:" % name)
-                logger.warning(
-                    "[!] '%s' not found in HTTP repository. Moving to next Finder." % name)
+                logger.warning("[!] '%s' not found in HTTP repository. Moving to next Finder." % name)
                 imp.release_lock()
                 return None
 
@@ -160,8 +157,7 @@ Function that creates and adds to the 'sys.meta_path' an HttpImporter object.
 The parameters are the same as the HttpImporter class contructor.
     '''
     if not base_url.startswith('https'):
-        logger.warning(
-            "[!] Using plain HTTP URLs ('%s') can be a security hazard!" % base_url)
+        logger.warning("[!] Using plain HTTP URLs ('%s') can be a security hazard!" % base_url)
     importer = HttpImporter(modules, base_url)
     sys.meta_path.append(importer)
     return importer
