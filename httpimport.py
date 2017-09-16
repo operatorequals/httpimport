@@ -28,8 +28,8 @@ __author__ = 'John Torakis - operatorequals'
 __version__ = '0.5.2'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
-FORMAT = "%(message)s"
-logging.basicConfig(format=FORMAT)
+FORMAT_log = "%(message)s"
+logging.basicConfig(format=FORMAT_log)
 
 '''
 To enable debug logging set:
