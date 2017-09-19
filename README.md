@@ -229,3 +229,5 @@ This will directly result in _Remote Code Execution_ to your current user's cont
 
 
 ##### Did I hear you say "Staging protocol for [covertutils](https://github.com/operatorequals/covertutils) backdoors"?
+
+Technique documentation on [using `httpimport` to stage `covertutils` backdoor code](http://covertutils.readthedocs.io/en/latest/staging_exec.html), making *EXE packed* and *unreadable* code load *non-included module dependencies*.
