@@ -1,6 +1,8 @@
 # httpimport
 Module for _remote_ _in-memory_ Python _package/module_ loading _through HTTP/S_
 
+[![PyPI version](https://badge.fury.io/py/httpimport.svg)](https://pypi.python.org/pypi/httpimport)
+
 A feature that _Python2/3_ misses and has become popular in other languages is the remote load of packages/modules.
 
 The `httpimport` module lets a developer to remotely import any package/module through plain HTTP or HTTPS.
