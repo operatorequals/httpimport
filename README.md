@@ -1,6 +1,8 @@
 # httpimport
 Module for _remote_ _in-memory_ Python _package/module_ loading _through HTTP/S_
 
+[![PyPI version](https://badge.fury.io/py/httpimport.svg)](https://pypi.python.org/pypi/httpimport)
+
 A feature that _Python2/3_ misses and has become popular in other languages is the remote load of packages/modules.
 
 The `httpimport` module lets a developer to remotely import any package/module through plain HTTP or HTTPS.
@@ -16,7 +18,8 @@ test_package
 
 ./test_package:
 __init__.py  __init__.pyc  module1.py  module2.py
-user@hostname:/tmp/test_directory$python -m SimpleHTTPServer &
+user@hostname:/tmp/test_directory$
+user@hostname:/tmp/test_directory$ python -m SimpleHTTPServer &
 [1] 9565
 Serving HTTP on 0.0.0.0 port 8000 ...
 
@@ -229,3 +232,5 @@ This will directly result in _Remote Code Execution_ to your current user's cont
 
 
 ##### Did I hear you say "Staging protocol for [covertutils](https://github.com/operatorequals/covertutils) backdoors"?
+
+Technique documentation on [using `httpimport` to stage `covertutils` backdoor code](http://covertutils.readthedocs.io/en/latest/staging_exec.html), making *EXE packed* and *unreadable* code load *non-included module dependencies*.
