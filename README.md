@@ -131,7 +131,7 @@ Class and method loaded
 Such HTTP Servers (serving Python packages in a _directory structured way_) can be found in the wild, not only created with `SimpleHTTPServer`.
 **Github repos can serve as Python HTTPS Repos as well!!!**
 
-### Here is an example with my beloved `covertutils` project:
+### Here is an example with my beloved ``covertutils`` project:
 ```python
 >>>
 >>> import covertutils

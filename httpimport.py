@@ -25,7 +25,7 @@ except:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.5.2'
+__version__ = '0.5.3'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 log_FORMAT = "%(message)s"
@@ -184,9 +184,18 @@ Creates the HTTPS URL that points to the raw contents of a github repository.
     return github_raw_url.format(user=username, repo=repo, branch=branch)
 
 
-def add_github_repo(username=None, repo=None, module=None, branch=None, commit=None):
+def __create_bitbucket_url(username, repo, branch='master'):
     '''
-Function that creates and adds to the 'sys.meta_path' an HttpImporter object equipped with a Github URL.
+Creates the HTTPS URL that points to the raw contents of a github repository.
+    '''
+    bitbucket_raw_url = 'https://bitbucket.org/{user}/{repo}/raw/{branch}/'
+    return bitbucket_raw_url.format(user=username, repo=repo, branch=branch)
+
+
+def _add_git_repo(url_builder, username=None, repo=None, module=None, branch=None, commit=None):
+    '''
+Function that creates and adds to the 'sys.meta_path' an HttpImporter object equipped with a URL of a Online Git server.
+The 'url_builder' parameter is a function that accepts the username, repo and branch/commit, and creates a HTTP/S URL of a Git server. Compatible functions are '__create_github_url', '__create_bitbucket_url'.
 The 'username' parameter defines the Github username which is the repository's owner.
 The 'repo' parameter defines the name of the repo that contains the modules/packages to be imported.
 The 'module' parameter is optional and is a list containing the modules/packages that are available in the chosen Github repository.
@@ -204,30 +213,47 @@ The 'branch' and 'commit' parameters cannot be both populated at the same call. 
         branch = 'master'
     if not module:
         module = repo
-    url = __create_github_url(username, repo, branch)
-    return add_remote_repo([module], url)
+    if type(module) == str:
+        module = [module]
+    url = url_builder(username, repo, branch)
+    return add_remote_repo(module, url)
 
 
 @contextmanager
 def github_repo(username=None, repo=None, module=None, branch=None, commit=None):
     '''
 Context Manager that provides import functionality from Github repositories through HTTPS.
-The parameters are the same as the 'add_github_repo' function.
+The parameters are the same as the '_add_git_repo' function. No 'url_builder' function is needed.
     '''
-    importer = add_github_repo(
+    importer = _add_git_repo(__create_github_url,
         username, repo, module=module, branch=branch, commit=commit)
     yield
     url = __create_github_url(username, repo, branch)
     remove_remote_repo(url)
 
 
+
+@contextmanager
+def bitbucket_repo(username=None, repo=None, module=None, branch=None, commit=None):
+    '''
+Context Manager that provides import functionality from BitBucket repositories through HTTPS.
+The parameters are the same as the '_add_git_repo' function. No 'url_builder' function is needed.
+    '''
+    importer = _add_git_repo(__create_bitbucket_url,
+        username, repo, module=module, branch=branch, commit=commit)
+    yield
+    url = __create_bitbucket_url(username, repo, branch)
+    remove_remote_repo(url)
+
+
+
 __all__ = [
     'HttpImporter',
 
-    'remote_repo',
     'add_remote_repo',
     'remove_remote_repo',
 
+    'remote_repo',
     'github_repo',
-    'add_github_repo',
+    'bitbucket_repo',
 ]
