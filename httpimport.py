@@ -25,7 +25,7 @@ except:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.5.3'
+__version__ = '0.5.9'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 log_FORMAT = "%(message)s"
@@ -43,6 +43,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARN)
 # logger.setLevel(logging.DEBUG)
 
+NON_SOURCE = False
 
 class HttpImporter(object):
     """
@@ -50,12 +51,13 @@ The class that implements the Importer API. Contains the "find_module" and "load
 The 'modules' parameter is a list, with the names of the modules/packages that can be imported from the given URL.
 The 'base_url' parameter is a string containing the URL where the repository/directory is served through HTTP/S
 
-It is better to not use this class directly, but through its wrappers 'remote_repo' and 'github_repo', that automatically load and unload this class' objects to the 'sys.meta_path' list.
+It is better to not use this class directly, but through its wrappers ('remote_repo', 'github_repo', etc) that automatically load and unload this class' objects to the 'sys.meta_path' list.
     """
 
     def __init__(self, modules, base_url):
         self.module_names = modules
         self.base_url = base_url + '/'
+        self.non_source = NON_SOURCE
 
     def find_module(self, fullname, path=None):
         logger.debug("FINDER=================")
@@ -100,7 +102,10 @@ It is better to not use this class directly, but through its wrappers 'remote_re
 
         try:
             logger.debug("[+] Trying to import as package from: '%s'" % package_url)
-            package_src = urlopen(package_url).read()
+            if self.non_source :    # Try the .pyc file
+                package_src = self.__fetch_compiled(package_url)
+            else :
+                package_src = urlopen(package_url).read()
             final_src = package_src
             final_url = package_url
         except IOError as e:
@@ -110,7 +115,11 @@ It is better to not use this class directly, but through its wrappers 'remote_re
         if final_src == None:
             try:
                 logger.debug("[+] Trying to import as module from: '%s'" % module_url)
-                module_src = urlopen(module_url).read()
+                module_src = None
+                if self.non_source :    # Try the .pyc file
+                    module_src = self.__fetch_compiled(module_url)
+                if module_src == None : # .pyc file not found, falling back to .py
+                    module_src = urlopen(module_url).read()
                 final_src = module_src
                 final_url = module_url
             except IOError as e:
@@ -137,6 +146,18 @@ It is better to not use this class directly, but through its wrappers 'remote_re
         imp.release_lock()
         return mod
 
+    def __fetch_compiled(self, url) :
+        import marshal
+        module_src = None
+        try :
+            module_compiled = urlopen(url + 'c').read()  # from blah.py --> blah.pyc
+            try :
+                module_src = marshal.loads(module_compiled[8:]) # Strip the .pyc file header of Python up to 3.3
+            except ValueError :
+                module_src = marshal.loads(module_compiled[12:])# Strip the .pyc file header of Python 3.3 and onwards (changed .pyc spec)
+        except IOError as e:
+            logger.debug("[-] No compiled version ('.pyc') for '%s' module found!" % url.split('/')[-1])
+        return module_src
 
 @contextmanager
 # Default 'python -m SimpleHTTPServer' URL
@@ -157,7 +178,7 @@ Function that creates and adds to the 'sys.meta_path' an HttpImporter object.
 The parameters are the same as the HttpImporter class contructor.
     '''
     if not base_url.startswith('https'):
-        logger.warning("[!] Using plain HTTP URLs ('%s') can be a security hazard!" % base_url)
+        logger.warning("[!] Using non HTTPS URLs ('%s') can be a security hazard!" % base_url)
     importer = HttpImporter(modules, base_url)
     sys.meta_path.append(importer)
     return importer
