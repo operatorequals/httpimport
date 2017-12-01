@@ -102,9 +102,10 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
         try:
             logger.debug("[+] Trying to import as package from: '%s'" % package_url)
+            package_src = None
             if self.non_source :    # Try the .pyc file
                 package_src = self.__fetch_compiled(package_url)
-            else :
+            if package_src == None :
                 package_src = urlopen(package_url).read()
             final_src = package_src
             final_url = package_url
@@ -153,8 +154,14 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             module_compiled = urlopen(url + 'c').read()  # from blah.py --> blah.pyc
             try :
                 module_src = marshal.loads(module_compiled[8:]) # Strip the .pyc file header of Python up to 3.3
+                return module_src
             except ValueError :
+                pass
+            try :
                 module_src = marshal.loads(module_compiled[12:])# Strip the .pyc file header of Python 3.3 and onwards (changed .pyc spec)
+                return module_src
+            except ValueError :
+                pass
         except IOError as e:
             logger.debug("[-] No compiled version ('.pyc') for '%s' module found!" % url.split('/')[-1])
         return module_src
