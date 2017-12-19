@@ -18,7 +18,8 @@ test_package
 
 ./test_package:
 __init__.py  __init__.pyc  module1.py  module2.py
-user@hostname:/tmp/test_directory$python -m SimpleHTTPServer &
+user@hostname:/tmp/test_directory$
+user@hostname:/tmp/test_directory$ python -m SimpleHTTPServer &
 [1] 9565
 Serving HTTP on 0.0.0.0 port 8000 ...
 
