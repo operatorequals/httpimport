@@ -187,7 +187,13 @@ What if you need to stick to a fixed -_known to work_- commit?
 'John Torakis - operatorequals'
 >>>
 ```
-
+### The newer sibling `bitbucket_repo()` (as of `0.5.9`)
+```python
+>>> with bitbucket_repo('atlassian', 'python-bitbucket', module='pybitbucket'):
+...     import pybitbucket
+...
+>>>
+```
 
 #### And no data touches the disk, nor any virtual environment. The import happens just to the running Python process!
 ### Life suddenly got simpler for Python module testing!!!
