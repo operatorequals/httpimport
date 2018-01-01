@@ -195,6 +195,26 @@ What if you need to stick to a fixed -_known to work_- commit?
 >>>
 ```
 
+## Recursive Dependencies
+If package `A` requires module `B` and `A` exists in `http://example.com/a_repo/`, while `B` exists in `http://example.com/b_repo/`, then `A` can be imported using the following technique:
+```python
+>>> from httpimport import remote_repo
+>>> with remote_repo(['B'],"http://example.com/b_repo/") :
+...     with remote_repo(['A'],"http://example.com/a_repo/") :
+...             import A
+... 
+[!] 'B' not found in HTTP repository. Moving to next Finder.
+>>> 
+>>> A
+<module 'A' from 'http://example.com/a_repo/A/__init__.py'>
+>>> B
+<module 'B' from 'http://example.com/a_repo/B.py'>
+>>> 
+```
+Any combination of *packages* and *modules* can be imported this way!
+
+*The `[!]` Warning was emitted by the `HttpImporter` object created for `A`, as it couldn't locate `B`, and passed control to the next `Finder` object, that happened to be the `HttpImporter` object created for `B`!*
+
 #### And no data touches the disk, nor any virtual environment. The import happens just to the running Python process!
 ### Life suddenly got simpler for Python module testing!!!
 Imagine the breeze of testing _Pull Requests_ and packages that you aren't sure they will work for you!
