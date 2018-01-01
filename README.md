@@ -1,13 +1,36 @@
-# httpimport
-Module for _remote_ _in-memory_ Python _package/module_ loading _through HTTP/S_
+# `httpimport`
+Module for _remote_, _in-memory_ Python _package/module_ `import`ing **through HTTP/S**
 
 [![PyPI version](https://badge.fury.io/py/httpimport.svg)](https://pypi.python.org/pypi/httpimport)
 
-A feature that _Python2/3_ misses and has become popular in other languages is the remote load of packages/modules.
+A feature that _Python2/3_ **misses** and has become popular in other languages is the **remote loading of packages/modules**.
 
-The `httpimport` module lets a developer to remotely import any package/module through plain HTTP or HTTPS.
+`httpimport` lets a *Python2/3* packages/modules to be imported directly in Python interpreter's process memory, through **remote `URIs`**, and *more*...
 
-### Example
+### Example - In a Nutshell
+
+```python
+>>> from httpimport import remote_repo, github_repo
+>>>
+>>> with remote_repo(['package1','package2','package3'], 'http://my-codes.example.com/python_packages'):
+... 	import package1
+...
+>>> 	
+>>> with github_repo('operatorequals', 'covertutils', branch = master):
+...     import covertutils
+... # Also works with 'bitbucket_repo'
+>>>
+>>>
+>>> # A depends to B and B depends to C (A, B, C : Python modules/packages in different domains):
+>>> with remote_repo(['C'], 'http://repo_c.my-codes.example.com/python_packages'):
+...	 with remote_repo(['B'], 'http://repo_b.my-codes.example.com/python_packages'):
+...		with remote_repo(['A'], 'http://repo_a.my-codes.example.com/python_packages'):
+... 	import A
+... # Asks for A, Searches for B, Asks for B, Searches for C, Asks for C --> Resolves --> Imports A
+>>>
+```
+
+### Example - The Whole Picture 
 
 Using the `SimpleHTTPServer`, a whole directory can be served through HTTP as follows:
 
@@ -46,7 +69,7 @@ __all__ = ["module1", "module2"]
 
 ```
 
-Using this simple built-in feature of Py2/3, a custom importer can been created, that given a base URL and a list of package names, it fetches and automatically loads all modules and packages to the local namespace.
+Using this simple built-in feature of `Py2/3`, a custom importer can been created, that given a base URL and a list of package names, it fetches and automatically loads all modules and packages to the local namespace.
 
 
 ### Usage
