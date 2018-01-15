@@ -275,6 +275,25 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
     remove_remote_repo(url)
 
 
+def load(module_name, url = 'http://localhost:8000/'):
+    '''
+Loads a module on demand and returns it as a module object. Does NOT load it to the Namespace.
+Example:
+
+>>> mod = httpimport.load('covertutils2','http://localhost:8000/')
+>>> mod
+<module 'covertutils' from 'http://localhost:8000//covertutils/__init__.py'>
+>>> 
+    '''
+    importer = HttpImporter([module_name], url)
+    loader = importer.find_module(module_name)
+    if loader != None :
+        module = loader.load_module(module_name)
+        if module :
+            return module
+    raise ImportError("Module '%s' cannot be imported from URL: '%s'" % (module_name, url) )
+
+
 
 __all__ = [
     'HttpImporter',
@@ -285,12 +304,5 @@ __all__ = [
     'remote_repo',
     'github_repo',
     'bitbucket_repo',
+
 ]
-
-
-
-def load(module,url):
-    import importlib
-    with remote_repo([module], url) :
-        module = importlib.import_module(module)
-    return module
