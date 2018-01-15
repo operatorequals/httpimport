@@ -286,3 +286,11 @@ __all__ = [
     'github_repo',
     'bitbucket_repo',
 ]
+
+
+
+def load(module,url):
+    import importlib
+    with remote_repo([module], url) :
+        module = importlib.import_module(module)
+    return module
