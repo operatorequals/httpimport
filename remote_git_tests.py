@@ -7,6 +7,7 @@ print covertutils
 
 
 with bitbucket_repo('atlassian', 'python-bitbucket', module = 'pybitbucket'):
-    import pybitbucket
+    from pybitbucket import auth
+    # import pybitbucket
 
 print pybitbucket

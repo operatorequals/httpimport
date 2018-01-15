@@ -97,6 +97,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
         module_url = self.base_url + '%s.py' % name.replace('.', '/')
         package_url = self.base_url + '%s/__init__.py' % name.replace('.', '/')
+        zip_url = self.base_url + '%s.zip' % name.replace('.', '/')
         final_url = None
         final_src = None
 
