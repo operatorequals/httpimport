@@ -305,6 +305,29 @@ _Using the `httpimport` with **HTTP URLs** is highly discouraged outside the `lo
   
 As HTTP traffic isn't encrypted and/or integrity checked (_unlike HTTPS_), it is trivial for a remote attacker to intercept the HTTP responses (via an _ARP MiTM_ probably), and add arbitrary _Python_ code to the downloaded _packages/modules_.
 This will directly result in _Remote Code Execution_ to your current user's context! In other words, you get **totally F\*ed**...
+
+### Preventing the disaster (setting `httpimport.INSECURE` flag):
+```python
+>>> import httpimport
+>>>
+>>> # Try importing from plain HTTP
+>>> httpimport.load('covertutils', 'http://localhost:8000//')
+[!] Using non HTTPS URLs ('http://localhost:8000//') can be a security hazard!
+[-] 'httpimport.INSECURE is not set! Aborting...
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "httpimport.py", line 302, in load
+    raise ImportError("Module '%s' cannot be imported from URL: '%s'" % (module_name, url) )
+ImportError: Module 'covertutils' cannot be imported from URL: 'http://localhost:8000/'
+>>> # Throws Error!
+>>>
+>>> # Importing from plain HTTP has to be DELIBERATELY enabled
+>>> httpimport.INSECURE = True
+>>> httpimport.load('covertutils', 'http://localhost:8000//')
+[!] Using non HTTPS URLs ('http://localhost:8000//') can be a security hazard!
+<module 'covertutils' from 'http://localhost:8000//covertutils/__init__.py'>
+>>> 
+```
 #### You have been warned! Use **HTTPS URLs** with `httpimport`!
 
 
