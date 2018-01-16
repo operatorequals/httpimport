@@ -310,23 +310,23 @@ This will directly result in _Remote Code Execution_ to your current user's cont
 ```python
 >>> import httpimport
 >>>
->>> # Try importing from plain HTTP
->>> httpimport.load('covertutils', 'http://localhost:8000//')
+>>> # Importing from plain HTTP ...
+>>> httpimport.load('test_module', 'http://localhost:8000//')
 [!] Using non HTTPS URLs ('http://localhost:8000//') can be a security hazard!
 [-] 'httpimport.INSECURE is not set! Aborting...
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
   File "httpimport.py", line 302, in load
     raise ImportError("Module '%s' cannot be imported from URL: '%s'" % (module_name, url) )
-ImportError: Module 'covertutils' cannot be imported from URL: 'http://localhost:8000/'
->>> # Throws Error!
+ImportError: Module 'test_module' cannot be imported from URL: 'http://localhost:8000/'
+>>> # ... Throws Error!
 >>>
->>> # Importing from plain HTTP has to be DELIBERATELY enabled
+>>> # Importing from plain HTTP has to be DELIBERATELY enabled!
 >>> httpimport.INSECURE = True
->>> httpimport.load('covertutils', 'http://localhost:8000//')
+>>> httpimport.load('test_module', 'http://localhost:8000//')
 [!] Using non HTTPS URLs ('http://localhost:8000//') can be a security hazard!
-<module 'covertutils' from 'http://localhost:8000//covertutils/__init__.py'>
->>> 
+<module 'test_module' from 'http://localhost:8000//test_module.py'>
+>>> # Succeeded!
 ```
 #### You have been warned! Use **HTTPS URLs** with `httpimport`!
 
