@@ -10,24 +10,36 @@ A feature that _Python2/3_ **misses** and has become popular in other languages 
 ### Example - In a Nutshell
 
 ```python
->>> from httpimport import remote_repo, github_repo
->>>
->>> with remote_repo(['package1','package2','package3'], 'http://my-codes.example.com/python_packages'):
+>>> import httpimport
+>>> httpimport.__all__
+['HttpImporter', 'add_remote_repo', 'remove_remote_repo', 'remote_repo', 'github_repo', 'bitbucket_repo']
+```
+```python
+>>> with httpimport.remote_repo(['package1','package2','package3'], 'http://my-codes.example.com/python_packages'):
 ... 	import package1
 ...
->>> 	
->>> with github_repo('operatorequals', 'covertutils', branch = master):
+```
+```python
+>>> with httpimport.github_repo('operatorequals', 'covertutils', branch = master):
 ...     import covertutils
 ... # Also works with 'bitbucket_repo'
->>>
->>>
+```
+```python
 >>> # A depends to B and B depends to C (A, B, C : Python modules/packages in different domains):
->>> with remote_repo(['C'], 'http://repo_c.my-codes.example.com/python_packages'):
-...	 with remote_repo(['B'], 'http://repo_b.my-codes.example.com/python_packages'):
-...		with remote_repo(['A'], 'http://repo_a.my-codes.example.com/python_packages'):
+>>> # A exists in "repo_a.my-codes.example.com"	|
+>>> # B exists in "repo_b.my-codes.example.com" | <-- Different domains
+>>> # C exists in "repo_c.my-codes.example.com" |
+>>> with httpimport.remote_repo(['C'], 'http://repo_c.my-codes.example.com/python_packages'):
+...	 with httpimport.remote_repo(['B'], 'http://repo_b.my-codes.example.com/python_packages'):
+...		with httpimport.remote_repo(['A'], 'http://repo_a.my-codes.example.com/python_packages'):
 ... 	import A
 ... # Asks for A, Searches for B, Asks for B, Searches for C, Asks for C --> Resolves --> Imports A
 >>>
+```
+```python
+>>> module_object = httpimport.load('package1', 'http://my-codes.example.com/python_packages')
+>>> module_object
+<module 'package1' from 'http://my-codes.example.com/python_packages/package1/__init__.py'>
 ```
 
 ### Example - The Whole Picture 
@@ -237,6 +249,24 @@ If package `A` requires module `B` and `A` exists in `http://example.com/a_repo/
 Any combination of *packages* and *modules* can be imported this way!
 
 *The `[!]` Warning was emitted by the `HttpImporter` object created for `A`, as it couldn't locate `B`, and passed control to the next `Finder` object, that happened to be the `HttpImporter` object created for `B`!*
+
+## The `load()` function
+The `load()` function was added to make module loading possible without `Namespace` pollution.
+```python
+>>> import httpimport
+>>> pack1 = httpimport.load('random-package','http://localhost:8000/')
+>>> pack1
+<module 'random-package' from 'http://localhost:8000//random-package/__init__.py'>
+>>>
+>>> # Trying to load 'os' module from the URL will fail, as it won't delegate to to other Finders/Loaders.
+>>> httpimport.load('os','http://localhost:8000/')
+[!] 'non-existent-package' not found in HTTP repository. Moving to next Finder.
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "httpimport.py", line 287, in load
+    raise ImportError("Module '%s' cannot be imported from '%s'" % (module_name, url) )
+ImportError: Module 'os' cannot be imported from 'http://localhost:8000/'
+```
 
 #### And no data touches the disk, nor any virtual environment. The import happens just to the running Python process!
 ### Life suddenly got simpler for Python module testing!!!
