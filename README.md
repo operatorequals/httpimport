@@ -329,11 +329,10 @@ ImportError: Module 'test_module' cannot be imported from URL: 'http://localhost
 <module 'test_module' from 'http://localhost:8000//test_module.py'>
 >>> # Succeeded!
 ```
+
 #### You have been warned! Use **HTTPS URLs** with `httpimport`!
 
 
-
-
-##### Did I hear you say "Staging protocol for [covertutils](https://github.com/operatorequals/covertutils) backdoors"?
+#### Did I hear you say "Staging protocol for [covertutils](https://github.com/operatorequals/covertutils) backdoors"?
 
 Technique documentation on [using `httpimport` to stage `covertutils` backdoor code](http://covertutils.readthedocs.io/en/latest/staging_exec.html), making *EXE packed* and *unreadable* code load *non-included module dependencies*.
