@@ -12,7 +12,7 @@ import httpimport
 try:
 	from pypandoc import convert
 
-	def read_md(f): return convert(f, 'rst')
+	def read_md(f): return convert(f, 'rst').replace("~",'^')
 
 except ImportError:
 	print("warning: pypandoc module not found, could not convert Markdown to RST")
@@ -22,11 +22,16 @@ except ImportError:
 setup(name='httpimport',
 	  version=httpimport.__version__,
 	  description='Module for remote in-memory Python package/module loading through HTTP',
-	  long_description=read_md('README.md')
+	  long_description=read_md('README.md'),
 	  author=httpimport.__author__,
 	  author_email='john.torakis@gmail.com',
 	  license='Apache2',
 	  url=httpimport.__github__,
 	  py_modules=['httpimport'],
-  	  keywords = ['import', 'memory', 'http']
+	  classifiers=[
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+ 		'Intended Audience :: Developers',
+	 	  ],
+  	  keywords = 'import, loader, memory, http',
 	  )
