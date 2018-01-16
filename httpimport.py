@@ -44,6 +44,7 @@ logger.setLevel(logging.WARN)
 # logger.setLevel(logging.DEBUG)
 
 NON_SOURCE = False
+INSECURE = False
 
 class HttpImporter(object):
     """
@@ -63,19 +64,28 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         logger.debug("FINDER=================")
         logger.debug("[!] Searching %s" % fullname)
         logger.debug("[!] Path is %s" % path)
-        logger.info("[@]Checking if in domain >")
+        logger.info("[@] Checking if connection is HTTPS secure >")
+        if not self.base_url.startswith('https'):
+            logger.warning("[!] Using non HTTPS URLs ('%s') can be a security hazard!" % self.base_url)
+            if not INSECURE :
+                logger.warning("[-] '%s.INSECURE is not set! Aborting..." % (__name__))
+                return None
+        logger.info("[@] Checking if in declared remote module names >")
         if fullname.split('.')[0] not in self.module_names:
+            logger.info("[-]Not found!")
             return None
 
-        logger.info("[@]Checking if built-in >")
+        logger.info("[@] Checking if built-in >")
         try:
             loader = imp.find_module(fullname, path)
             if loader:
                 return None
+                logger.info("[-]Found locally!")
         except ImportError:
             pass
-        logger.info("[@]Checking if it is name repetition >")
+        logger.info("[@] Checking if it is name repetition >")
         if fullname.split('.').count(fullname.split('.')[-1]) > 1:
+            logger.info("[-]Found locally!")
             return None
 
         logger.info("[*]Module/Package '%s' can be loaded!" % fullname)
@@ -185,8 +195,6 @@ def add_remote_repo(modules, base_url='http://localhost:8000/'):
 Function that creates and adds to the 'sys.meta_path' an HttpImporter object.
 The parameters are the same as the HttpImporter class contructor.
     '''
-    if not base_url.startswith('https'):
-        logger.warning("[!] Using non HTTPS URLs ('%s') can be a security hazard!" % base_url)
     importer = HttpImporter(modules, base_url)
     sys.meta_path.append(importer)
     return importer
