@@ -250,7 +250,7 @@ Any combination of *packages* and *modules* can be imported this way!
 
 *The `[!]` Warning was emitted by the `HttpImporter` object created for `A`, as it couldn't locate `B`, and passed control to the next `Finder` object, that happened to be the `HttpImporter` object created for `B`!*
 
-## The `load()` function
+## The `load()` function (as of `0.5.10`)
 The `load()` function was added to make module loading possible without `Namespace` pollution.
 ```python
 >>> import httpimport
