@@ -286,9 +286,10 @@ Imagine the breeze of testing _Pull Requests_ and packages that you aren't sure 
 FINDER=================
 [!] Searching covertutils
 [!] Path is None
-[@]Checking if in domain >
-[@]Checking if built-in >
-[@]Checking if it is name repetition >
+[@] Checking if connection is HTTPS secure >
+[@] Checking if in declared remote module names >
+[@] Checking if built-in >
+[@] Checking if it is name repetition >
 [*]Module/Package 'covertutils' can be loaded!
 LOADER=================
 [+] Loading covertutils
