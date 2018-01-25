@@ -68,11 +68,11 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         if not self.base_url.startswith('https'):
             logger.warning("[!] Using non HTTPS URLs ('%s') can be a security hazard!" % self.base_url)
             if not INSECURE :
-                logger.warning("[-] '%s.INSECURE is not set! Aborting..." % (__name__))
+                logger.warning("[-] '%s.INSECURE' is not set! Aborting..." % (__name__))
                 return None
         logger.info("[@] Checking if in declared remote module names >")
         if fullname.split('.')[0] not in self.module_names:
-            logger.info("[-]Not found!")
+            logger.info("[-] Not found!")
             return None
 
         logger.info("[@] Checking if built-in >")
@@ -80,16 +80,17 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             loader = imp.find_module(fullname, path)
             if loader:
                 return None
-                logger.info("[-]Found locally!")
+                logger.info("[-] Found locally!")
         except ImportError:
             pass
         logger.info("[@] Checking if it is name repetition >")
         if fullname.split('.').count(fullname.split('.')[-1]) > 1:
-            logger.info("[-]Found locally!")
+            logger.info("[-] Found locally!")
             return None
 
         logger.info("[*]Module/Package '%s' can be loaded!" % fullname)
         return self
+
 
     def load_module(self, name):
         imp.acquire_lock()
@@ -176,6 +177,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         except IOError as e:
             logger.debug("[-] No compiled version ('.pyc') for '%s' module found!" % url.split('/')[-1])
         return module_src
+
 
 @contextmanager
 # Default 'python -m SimpleHTTPServer' URL

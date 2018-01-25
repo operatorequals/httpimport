@@ -18,11 +18,17 @@ except ImportError:
 	print("warning: pypandoc module not found, could not convert Markdown to RST")
 	def read_md(f): return open(f, 'r').read()
 
+try :
+	long_description_str = read_md('README.md')
+except IOError as e:
+	long_description_str = 'https://github.com/operatorequals/httpimport/blob/master/README.md'
+
+
 
 setup(name='httpimport',
 	  version=httpimport.__version__,
 	  description='Module for remote in-memory Python package/module loading through HTTP',
-	  long_description=read_md('README.md'),
+	  long_description=long_description_str,
 	  author=httpimport.__author__,
 	  author_email='john.torakis@gmail.com',
 	  license='Apache2',
