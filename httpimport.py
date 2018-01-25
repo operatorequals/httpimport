@@ -25,7 +25,7 @@ except:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.5.14'
+__version__ = '0.5.15'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 log_FORMAT = "%(message)s"
@@ -63,7 +63,8 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         if not INSECURE and not self.__isHTTPS(base_url) :
             logger.warning("[-] '%s.INSECURE' is not set! Aborting..." % (__name__))
             raise Exception("Plain HTTP URL provided with '%s.INSECURE' not set" % __name__)
-        else :
+
+        if not self.__isHTTPS(base_url):
             logger.warning("[!] Using non HTTPS URLs ('%s') can be a security hazard!" % self.base_url)
 
 
