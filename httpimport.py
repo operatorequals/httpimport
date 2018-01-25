@@ -60,16 +60,17 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         self.base_url = base_url + '/'
         self.non_source = NON_SOURCE
 
+        if not INSECURE and not self.__isHTTPS(base_url) :
+            logger.warning("[-] '%s.INSECURE' is not set! Aborting..." % (__name__))
+            raise Exception("Plain HTTP URL provided with '%s.INSECURE' not set" % __name__)
+        else :
+            logger.warning("[!] Using non HTTPS URLs ('%s') can be a security hazard!" % self.base_url)
+
+
     def find_module(self, fullname, path=None):
         logger.debug("FINDER=================")
         logger.debug("[!] Searching %s" % fullname)
         logger.debug("[!] Path is %s" % path)
-        logger.info("[@] Checking if connection is HTTPS secure >")
-        if not self.base_url.startswith('https'):
-            logger.warning("[!] Using non HTTPS URLs ('%s') can be a security hazard!" % self.base_url)
-            if not INSECURE :
-                logger.warning("[-] '%s.INSECURE' is not set! Aborting..." % (__name__))
-                return None
         logger.info("[@] Checking if in declared remote module names >")
         if fullname.split('.')[0] not in self.module_names:
             logger.info("[-] Not found!")
@@ -177,6 +178,10 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         except IOError as e:
             logger.debug("[-] No compiled version ('.pyc') for '%s' module found!" % url.split('/')[-1])
         return module_src
+
+
+    def __isHTTPS(self, url) :
+        return self.base_url.startswith('https') 
 
 
 @contextmanager
