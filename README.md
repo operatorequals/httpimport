@@ -1,5 +1,7 @@
 # `httpimport`
-Module for _remote_, _in-memory_ Python _package/module_ `import`ing **through HTTP/S**
+### *Python's missing feature!*
+
+_Remote_, _in-memory_ Python _package/module_ `import`ing **through HTTP/S**
 
 [![PyPI version](https://badge.fury.io/py/httpimport.svg)](https://pypi.python.org/pypi/httpimport)
 
