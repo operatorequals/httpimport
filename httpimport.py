@@ -45,6 +45,7 @@ logger.setLevel(logging.WARN)
 
 NON_SOURCE = False
 INSECURE = False
+RELOAD = False
 
 class HttpImporter(object):
     """
@@ -98,14 +99,14 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         imp.acquire_lock()
         logger.debug("LOADER=================")
         logger.debug("[+] Loading %s" % name)
-        if name in sys.modules:
+        if name in sys.modules and not RELOAD:
             logger.info('[+] Module "%s" already loaded!' % name)
             imp.release_lock()
             return sys.modules[name]
 
-        if name.split('.')[-1] in sys.modules:
-            imp.release_lock()
+        if name.split('.')[-1] in sys.modules and not RELOAD:
             logger.info('[+] Module "%s" loaded as a top level module!' % name)
+            imp.release_lock()
             return sys.modules[name.split('.')[-1]]
 
         module_url = self.base_url + '%s.py' % name.replace('.', '/')
