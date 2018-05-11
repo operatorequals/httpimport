@@ -81,8 +81,8 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         try:
             loader = imp.find_module(fullname, path)
             if loader:
-                return None
                 logger.info("[-] Found locally!")
+                return None
         except ImportError:
             pass
         logger.info("[@] Checking if it is name repetition >")
@@ -218,7 +218,8 @@ Function that creates and removes from the 'sys.meta_path' an HttpImporter objec
                 sys.meta_path.remove(importer)
                 return True
         except Exception as e:
-            return False
+            pass
+    return False
 
 
 def __create_github_url(username, repo, branch='master'):
