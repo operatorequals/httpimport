@@ -150,6 +150,30 @@ ImportError: cannot import name module2
 <function dummy_func at 0x7f7a8a170410>
 ```
 
+### Reload module (setting `httpimport.RELOAD` flag):
+```python
+import importlib
+import httpimport
+
+httpimport.INSECURE = True
+
+with httpimport.remote_repo(['mod'], 'http://localhost:8000/a'):
+    import mod
+    print(mod.module_name())
+
+with httpimport.remote_repo(['mod'], 'http://localhost:8000/b'):
+    importlib.reload(mod)
+    import mod
+    print(mod.module_name())
+
+httpimport.RELOAD = True  # Allow reload module
+
+with httpimport.remote_repo(['mod'], 'http://localhost:8000/b'):
+    importlib.reload(mod)
+    import mod
+    print(mod.module_name())
+```
+
 ### The Tiny Test for your amusement
 
 The `test.py` file contains a minimal test. Try changing working directories and package names and see what happens...
