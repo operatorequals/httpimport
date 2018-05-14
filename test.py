@@ -10,7 +10,7 @@ import sys
 from threading import Thread
 from time import sleep
 
-from httpimport import remote_repo, github_repo
+import httpimport
 
 import unittest
 from random import randint
@@ -42,14 +42,15 @@ class Test( unittest.TestCase ) :
 
 		# ============== Wait until HTTP server is ready
 		sleep(1)
-
-		with remote_repo(['test_package'], base_url = 'http://localhost:%d/' % PORT) :
+		httpimport.INSECURE = True
+		with httpimport.remote_repo(['test_package'], base_url = 'http://localhost:%d/' % PORT) :
 			from test_package import module1
 
 		self.assertTrue(module1.dummy_str)	# If this point is reached then the module1 is imported succesfully!
 
 
 	def test_github_repo(self) :
-		with github_repo( 'operatorequals', 'covertutils', ) :
+		with httpimport.github_repo( 'operatorequals', 'covertutils', ) :
 			import covertutils
 		self.assertTrue(covertutils.__author__)	# If this point is reached then the module1 is imported succesfully!
+

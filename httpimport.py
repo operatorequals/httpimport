@@ -25,7 +25,7 @@ except:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.5.15'
+__version__ = '0.5.16'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 log_FORMAT = "%(message)s"
@@ -34,8 +34,7 @@ logging.basicConfig(format=log_FORMAT)
 '''
 To enable debug logging set:
 
-	httpimport_logger = logging.getLogger('httpimport')
-	httpimport_logger.setLevel(logging.DEBUG)
+>>> import logging; logging.getLogger('httpimport').setLevel(logging.DEBUG)
 
 in your script.
 '''
@@ -205,20 +204,20 @@ Function that creates and adds to the 'sys.meta_path' an HttpImporter object.
 The parameters are the same as the HttpImporter class contructor.
     '''
     importer = HttpImporter(modules, base_url)
-    sys.meta_path.append(importer)
+    sys.meta_path.insert(0, importer)
     return importer
 
 
 def remove_remote_repo(base_url):
     '''
-Function that creates and removes from the 'sys.meta_path' an HttpImporter object given its HTTP/S URL.
+Function that removes from the 'sys.meta_path' an HttpImporter object given its HTTP/S URL.
     '''
     for importer in sys.meta_path:
         try:
-            if importer.base_url[:-1] == base_url:  # an extra '/' is always added
+            if importer.base_url.startswith(base_url):  # an extra '/' is always added
                 sys.meta_path.remove(importer)
                 return True
-        except Exception as e:
+        except AttributeError as e:
             pass
     return False
 
@@ -275,8 +274,7 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
     importer = _add_git_repo(__create_github_url,
         username, repo, module=module, branch=branch, commit=commit)
     yield
-    url = __create_github_url(username, repo, branch)
-    remove_remote_repo(url)
+    remove_remote_repo(importer.base_url)
 
 
 
@@ -289,8 +287,7 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
     importer = _add_git_repo(__create_bitbucket_url,
         username, repo, module=module, branch=branch, commit=commit)
     yield
-    url = __create_bitbucket_url(username, repo, branch)
-    remove_remote_repo(url)
+    remove_remote_repo(importer.base_url)
 
 
 def load(module_name, url = 'http://localhost:8000/'):
@@ -298,7 +295,7 @@ def load(module_name, url = 'http://localhost:8000/'):
 Loads a module on demand and returns it as a module object. Does NOT load it to the Namespace.
 Example:
 
->>> mod = httpimport.load('covertutils2','http://localhost:8000/')
+>>> mod = httpimport.load('covertutils','http://localhost:8000/')
 >>> mod
 <module 'covertutils' from 'http://localhost:8000//covertutils/__init__.py'>
 >>> 
