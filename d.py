@@ -1,4 +1,6 @@
 import httpimport
+import logging
+logging.getLogger('httpimport').setLevel(logging.DEBUG)
 with httpimport.remote_repo(['multidict'], "https://raw.githubusercontent.com/superloach/multidict/master/"):
 	import multidict
 with httpimport.remote_repo(['attr', 'dry_attr'], "https://raw.githubusercontent.com/denis-ryzhkov/attr/master"):
