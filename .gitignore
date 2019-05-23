@@ -1,4 +1,5 @@
 .idea
 *.pyc
 *.egg-info
+.venv
 __pycache__
