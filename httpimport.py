@@ -46,9 +46,9 @@ logger.setLevel(logging.WARN)
 NON_SOURCE = False
 INSECURE = False
 RELOAD = False
-PY2 = (sys.version_info.major == 2)
+LEGACY = (sys.version_info.major == 2)
 
-if PY2: import imp
+if LEGACY: import imp
 
 class HttpImporter(object):
     """
@@ -89,7 +89,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
         logger.info("[@] Checking if built-in >")
         try:
-            if PY2:
+            if LEGACY:
                 loader = imp.find_module(fullname, path)
             else:
                 loader = importlib.find_loader(fullname, path)
@@ -110,17 +110,17 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
 
     def load_module(self, name):
-        if PY2: imp.acquire_lock()
+        if LEGACY: imp.acquire_lock()
         logger.debug("LOADER=================")
         logger.debug("[+] Loading %s" % name)
         if name in sys.modules and not RELOAD:
             logger.info('[+] Module "%s" already loaded!' % name)
-            if PY2: imp.release_lock()
+            if LEGACY: imp.release_lock()
             return sys.modules[name]
 
         if name.split('.')[-1] in sys.modules and not RELOAD:
             logger.info('[+] Module "%s" loaded as a top level module!' % name)
-            if PY2: imp.release_lock()
+            if LEGACY: imp.release_lock()
             return sys.modules[name.split('.')[-1]]
 
         module_url = self.base_url + '%s.py' % name.replace('.', '/')
@@ -156,7 +156,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
                 module_src = None
                 logger.info("[-] '%s' is not a module:" % name)
                 logger.warning("[!] '%s' not found in HTTP repository. Moving to next Finder." % name)
-                if PY2: imp.release_lock()
+                if LEGACY: imp.release_lock()
                 return None
 
         logger.debug("[+] Importing '%s'" % name)
@@ -174,7 +174,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         sys.modules[name] = mod
         exec(final_src, mod.__dict__)
         logger.info("[+] '%s' imported succesfully!" % name)
-        if PY2: imp.release_lock()
+        if LEGACY: imp.release_lock()
         return mod
 
     def __fetch_compiled(self, url) :
