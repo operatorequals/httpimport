@@ -15,7 +15,6 @@ limitations under the License.
 '''
 
 import types
-import importlib
 import sys
 import logging
 
@@ -48,7 +47,12 @@ INSECURE = False
 RELOAD = False
 LEGACY = (sys.version_info.major == 2)
 
-if LEGACY: import imp
+if LEGACY:
+	logger.warning("[!] LEGACY flag automatically enabled for Python 2.")
+	import imp
+	logger.warning("[!] Using imp (deprecated) instead of importlib.")
+else:
+	import importlib
 
 class HttpImporter(object):
     """
