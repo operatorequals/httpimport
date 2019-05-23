@@ -27,7 +27,7 @@ except:
 
 __author__ = 'John Torakis (operatorequals) and Terra Brown (superloach)'
 __version__ = '0.5.16'
-__github__ = 'https://github.com/superloach/httpimport'
+__github__ = 'https://github.com/operatorequals/httpimport'
 
 log_FORMAT = "%(message)s"
 logging.basicConfig(format=log_FORMAT)
