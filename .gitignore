@@ -2,4 +2,6 @@
 *.pyc
 *.egg-info
 .venv
+d.py
+e.py
 __pycache__
