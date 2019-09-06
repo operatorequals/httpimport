@@ -256,6 +256,27 @@ What if you need to stick to a fixed -_known to work_- commit?
 >>>
 ```
 
+### Another sibling `gitlab_repo()` (as of `0.5.17`)
+```python
+>>> with gitlab_repo('harinathreddyk', 'python-gitlab', module='gitlab'):
+...     from gitlab import const
+...
+>>>
+```
+
+#### The `domain` parameter for `gitlab_repo()`
+You can point to your own installation of *GitLab* by using the `domain` parameter:
+
+```python
+>>> with gitlab_repo('self', 'myproject', module='test_package', domain='127.0.0.1:8080'):
+...     import test_package
+...
+>>>
+```
+This covers the posibility of using `httpimport` to point development environments,
+which is a strong use case for `httpimport`.
+
+
 ## Recursive Dependencies
 If package `A` requires module `B` and `A` exists in `http://example.com/a_repo/`, while `B` exists in `http://example.com/b_repo/`, then `A` can be imported using the following technique:
 ```python

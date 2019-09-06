@@ -24,8 +24,14 @@ try:
 except:
     from urllib.request import urlopen
 
+def httpimport_urlopen(url):
+    
+    resp = urlopen(url)
+    while resp.geturl() != url:
+        resp = urlopen(resp.geturl())
+
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.5.16'
+__version__ = '0.5.17'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 log_FORMAT = "%(message)s"
@@ -232,13 +238,26 @@ Creates the HTTPS URL that points to the raw contents of a github repository.
 
 def __create_bitbucket_url(username, repo, branch='master'):
     '''
-Creates the HTTPS URL that points to the raw contents of a github repository.
+Creates the HTTPS URL that points to the raw contents of a bitbucket repository.
     '''
     bitbucket_raw_url = 'https://bitbucket.org/{user}/{repo}/raw/{branch}/'
     return bitbucket_raw_url.format(user=username, repo=repo, branch=branch)
 
+def __create_gitlab_url(username, repo, branch='master', domain='gitlab.com'):
+    '''
+Creates the HTTPS URL that points to the raw contents of a gitlab repository.
+    '''
 
-def _add_git_repo(url_builder, username=None, repo=None, module=None, branch=None, commit=None):
+    '''
+    Gitlab returns a 308 response code for redirects,
+    so the URLs have to be exact, as urllib recognises 308 as error.
+    '''
+    gitlab_raw_url = 'https://{domain}/{user}/{repo}/raw/{branch}'
+    return gitlab_raw_url.format(user=username, repo=repo, branch=branch, domain=domain)
+
+
+
+def _add_git_repo(url_builder, username=None, repo=None, module=None, branch=None, commit=None, **kw):
     '''
 Function that creates and adds to the 'sys.meta_path' an HttpImporter object equipped with a URL of a Online Git server.
 The 'url_builder' parameter is a function that accepts the username, repo and branch/commit, and creates a HTTP/S URL of a Git server. Compatible functions are '__create_github_url', '__create_bitbucket_url'.
@@ -261,7 +280,7 @@ The 'branch' and 'commit' parameters cannot be both populated at the same call. 
         module = repo
     if type(module) == str:
         module = [module]
-    url = url_builder(username, repo, branch)
+    url = url_builder(username, repo, branch, **kw)
     return add_remote_repo(module, url)
 
 
@@ -286,6 +305,19 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
     '''
     importer = _add_git_repo(__create_bitbucket_url,
         username, repo, module=module, branch=branch, commit=commit)
+    yield
+    remove_remote_repo(importer.base_url)
+
+
+
+@contextmanager
+def gitlab_repo(username=None, repo=None, module=None, branch=None, commit=None, domain='gitlab.com'):
+    '''
+Context Manager that provides import functionality from Github repositories through HTTPS.
+The parameters are the same as the '_add_git_repo' function. No 'url_builder' function is needed.
+    '''
+    importer = _add_git_repo(__create_gitlab_url,
+        username, repo, module=module, branch=branch, commit=commit, domain=domain)
     yield
     remove_remote_repo(importer.base_url)
 
@@ -319,5 +351,5 @@ __all__ = [
     'remote_repo',
     'github_repo',
     'bitbucket_repo',
-
+    'gitlab_repo'
 ]
