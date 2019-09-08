@@ -81,7 +81,12 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             self.z = urlopen(base_url).read()
             zio = io.BytesIO(self.z)
             self.zfile = zipfile.ZipFile(zio)
-            self._paths = [x.filename for x in self.zfile.filelist]
+            logger.info("[+] ZIP file loaded successfully from '%s'!" % self.base_url)
+            self._paths = [
+                    x.filename
+                    # "/".join(x.filename.split('/')[traverse_dir:])
+                    for x in self.zfile.filelist
+                ]
 
 
     def _mod_to_paths(self, fullname):
@@ -120,7 +125,9 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             return None
 
         if self.zip:
+            logger.info("[@] Checking if module exists in loaded ZIP file >")
             if self._mod_to_paths(fullname) is  None:
+                logger.info("[-] Not Found in ZIP file!")
                 return None
 
         logger.info("[*]Module/Package '%s' can be loaded!" % fullname)
@@ -142,9 +149,11 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             return sys.modules[name.split('.')[-1]]
 
         if self.zip:
-            name = self._mod_to_paths(name)
-            if not name in self._paths:
-                raise ImportError(name)
+            zip_name = self._mod_to_paths(name)
+            if not zip_name in self._paths:
+                logger.info('[-] Requested module/package "%s" name not available in ZIP file list!' % zip_name)
+                imp.release_lock()
+                raise ImportError(zip_name)
 
         module_url = self.base_url + '%s.py' % name.replace('.', '/')
         package_url = self.base_url + '%s/__init__.py' % name.replace('.', '/')
@@ -152,7 +161,8 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         final_src = None
 
         if self.zip:
-            package_src = self.zfile.open(name, 'r', pwd=self.__zip_pwd).read()
+            package_src = self.zfile.open(zip_name, 'r', pwd=self.__zip_pwd).read()
+            logger.info('[+] Source from zipped file "%s" loaded!' % zip_name)       
             final_src = package_src
 
         else:
