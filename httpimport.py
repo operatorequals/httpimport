@@ -17,11 +17,14 @@ limitations under the License.
 import imp
 import sys
 import logging
+import io
+import zipfile
+import os
 
 from contextlib import contextmanager
 try:
     from urllib2 import urlopen
-except:
+except ImportError:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
@@ -55,10 +58,11 @@ The 'base_url' parameter is a string containing the URL where the repository/dir
 It is better to not use this class directly, but through its wrappers ('remote_repo', 'github_repo', etc) that automatically load and unload this class' objects to the 'sys.meta_path' list.
     """
 
-    def __init__(self, modules, base_url):
+    def __init__(self, modules, base_url, zip=False):
         self.module_names = modules
         self.base_url = base_url + '/'
         self.non_source = NON_SOURCE
+        self.zip = zip
 
         if not INSECURE and not self.__isHTTPS(base_url) :
             logger.warning("[-] '%s.INSECURE' is not set! Aborting..." % (__name__))
@@ -66,6 +70,25 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
         if not self.__isHTTPS(base_url):
             logger.warning("[!] Using non HTTPS URLs ('%s') can be a security hazard!" % self.base_url)
+
+        if self.zip:
+            self.z = urlopen(base_url).read()
+            zio = io.BytesIO(self.z)
+            self.zfile = zipfile.ZipFile(zio)
+            self._paths = [x.filename for x in self.zfile.filelist]
+
+
+    def _mod_to_paths(self, fullname):
+        # get the python module name
+        py_filename = fullname.replace(".", os.sep) + ".py"
+        # get the filename if it is a package/subpackage
+        py_package = fullname.replace(".", os.sep, fullname.count(".") - 1) + "/__init__.py"
+        if py_filename in self._paths:
+            return py_filename
+        elif py_package in self._paths:
+            return py_package
+        else:
+            return None
 
 
     def find_module(self, fullname, path=None):
@@ -90,6 +113,10 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             logger.info("[-] Found locally!")
             return None
 
+        if self.zip:
+            if self._mod_to_paths(fullname) is  None:
+                return None
+
         logger.info("[*]Module/Package '%s' can be loaded!" % fullname)
         return self
 
@@ -108,41 +135,50 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             imp.release_lock()
             return sys.modules[name.split('.')[-1]]
 
+        if self.zip:
+            name = self._mod_to_paths(name)
+            if not name in self._paths:
+                raise ImportError(name)
+
         module_url = self.base_url + '%s.py' % name.replace('.', '/')
         package_url = self.base_url + '%s/__init__.py' % name.replace('.', '/')
-        zip_url = self.base_url + '%s.zip' % name.replace('.', '/')
         final_url = None
         final_src = None
 
-        try:
-            logger.debug("[+] Trying to import as package from: '%s'" % package_url)
-            package_src = None
-            if self.non_source :    # Try the .pyc file
-                package_src = self.__fetch_compiled(package_url)
-            if package_src == None :
-                package_src = urlopen(package_url).read()
+        if self.zip:
+            package_src = self.zfile.open(name, 'r').read()
             final_src = package_src
-            final_url = package_url
-        except IOError as e:
-            package_src = None
-            logger.info("[-] '%s' is not a package:" % name)
 
-        if final_src == None:
+        else:
             try:
-                logger.debug("[+] Trying to import as module from: '%s'" % module_url)
-                module_src = None
+                logger.debug("[+] Trying to import as package from: '%s'" % package_url)
+                package_src = None
                 if self.non_source :    # Try the .pyc file
-                    module_src = self.__fetch_compiled(module_url)
-                if module_src == None : # .pyc file not found, falling back to .py
-                    module_src = urlopen(module_url).read()
-                final_src = module_src
-                final_url = module_url
+                    package_src = self.__fetch_compiled(package_url)
+                if package_src == None :
+                    package_src = urlopen(package_url).read()
+                final_src = package_src
+                final_url = package_url
             except IOError as e:
-                module_src = None
-                logger.info("[-] '%s' is not a module:" % name)
-                logger.warning("[!] '%s' not found in HTTP repository. Moving to next Finder." % name)
-                imp.release_lock()
-                return None
+                package_src = None
+                logger.info("[-] '%s' is not a package:" % name)
+
+            if final_src == None:
+                try:
+                    logger.debug("[+] Trying to import as module from: '%s'" % module_url)
+                    module_src = None
+                    if self.non_source :    # Try the .pyc file
+                        module_src = self.__fetch_compiled(module_url)
+                    if module_src == None : # .pyc file not found, falling back to .py
+                        module_src = urlopen(module_url).read()
+                    final_src = module_src
+                    final_url = module_url
+                except IOError as e:
+                    module_src = None
+                    logger.info("[-] '%s' is not a module:" % name)
+                    logger.warning("[!] '%s' not found in HTTP repository. Moving to next Finder." % name)
+                    imp.release_lock()
+                    return None
 
         logger.debug("[+] Importing '%s'" % name)
         mod = imp.new_module(name)
@@ -153,7 +189,10 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         else:
             mod.__package__ = name.split('.')[0]
 
-        mod.__path__ = ['/'.join(mod.__file__.split('/')[:-1]) + '/']
+        try:
+            mod.__path__ = ['/'.join(mod.__file__.split('/')[:-1]) + '/']
+        except:
+            mod.__path__ = self.base_url
         logger.debug("[+] Ready to execute '%s' code" % name)
         sys.modules[name] = mod
         exec(final_src, mod.__dict__)
@@ -198,12 +237,12 @@ The parameters are the same as the HttpImporter class contructor.
 
 
 # Default 'python -m SimpleHTTPServer' URL
-def add_remote_repo(modules, base_url='http://localhost:8000/'):
+def add_remote_repo(modules, base_url='http://localhost:8000/', zip=False):
     '''
 Function that creates and adds to the 'sys.meta_path' an HttpImporter object.
 The parameters are the same as the HttpImporter class contructor.
     '''
-    importer = HttpImporter(modules, base_url)
+    importer = HttpImporter(modules, base_url, zip=zip)
     sys.meta_path.insert(0, importer)
     return importer
 
@@ -316,7 +355,7 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
     remove_remote_repo(importer.base_url)
 
 
-def load(module_name, url = 'http://localhost:8000/'):
+def load(module_name, url = 'http://localhost:8000/', zip=False):
     '''
 Loads a module on demand and returns it as a module object. Does NOT load it to the Namespace.
 Example:
@@ -326,7 +365,7 @@ Example:
 <module 'covertutils' from 'http://localhost:8000//covertutils/__init__.py'>
 >>> 
     '''
-    importer = HttpImporter([module_name], url)
+    importer = HttpImporter([module_name], url, zip=zip)
     loader = importer.find_module(module_name)
     if loader != None :
         module = loader.load_module(module_name)
