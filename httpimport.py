@@ -58,11 +58,17 @@ The 'base_url' parameter is a string containing the URL where the repository/dir
 It is better to not use this class directly, but through its wrappers ('remote_repo', 'github_repo', etc) that automatically load and unload this class' objects to the 'sys.meta_path' list.
     """
 
-    def __init__(self, modules, base_url, zip=False):
+    def __init__(self, modules, base_url, zip=False, zip_pwd=None):
+        if zip_pwd is not None and zip == False:
+            raise IllegalArgumentException(
+                    "Zip File password is set but not 'zip' parameter is not specified"
+                )
+
         self.module_names = modules
         self.base_url = base_url + '/'
         self.non_source = NON_SOURCE
         self.zip = zip
+        self.__zip_pwd = zip_pwd
 
         if not INSECURE and not self.__isHTTPS(base_url) :
             logger.warning("[-] '%s.INSECURE' is not set! Aborting..." % (__name__))
@@ -146,7 +152,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         final_src = None
 
         if self.zip:
-            package_src = self.zfile.open(name, 'r').read()
+            package_src = self.zfile.open(name, 'r', pwd=self.__zip_pwd).read()
             final_src = package_src
 
         else:
@@ -226,12 +232,12 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
 @contextmanager
 # Default 'python -m SimpleHTTPServer' URL
-def remote_repo(modules, base_url='http://localhost:8000/'):
+def remote_repo(modules, base_url='http://localhost:8000/', zip=False):
     '''
 Context Manager that provides remote import functionality through a URL.
 The parameters are the same as the HttpImporter class contructor.
     '''
-    importer = add_remote_repo(modules, base_url)
+    importer = add_remote_repo(modules, base_url, zip=zip)
     yield
     remove_remote_repo(base_url)
 
@@ -355,7 +361,7 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
     remove_remote_repo(importer.base_url)
 
 
-def load(module_name, url = 'http://localhost:8000/', zip=False):
+def load(module_name, url = 'http://localhost:8000/', zip=False, zip_pwd=None):
     '''
 Loads a module on demand and returns it as a module object. Does NOT load it to the Namespace.
 Example:
@@ -365,7 +371,7 @@ Example:
 <module 'covertutils' from 'http://localhost:8000//covertutils/__init__.py'>
 >>> 
     '''
-    importer = HttpImporter([module_name], url, zip=zip)
+    importer = HttpImporter([module_name], url, zip=zip, zip_pwd=zip_pwd)
     loader = importer.find_module(module_name)
     if loader != None :
         module = loader.load_module(module_name)
