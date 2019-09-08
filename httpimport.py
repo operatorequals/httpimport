@@ -24,12 +24,6 @@ try:
 except:
     from urllib.request import urlopen
 
-def httpimport_urlopen(url):
-    
-    resp = urlopen(url)
-    while resp.geturl() != url:
-        resp = urlopen(resp.geturl())
-
 __author__ = 'John Torakis - operatorequals'
 __version__ = '0.5.17'
 __github__ = 'https://github.com/operatorequals/httpimport'
