@@ -12,11 +12,6 @@ A feature that _Python2/3_ **misses** and has become popular in other languages 
 ### Example - In a Nutshell
 
 ```python
->>> import httpimport
->>> httpimport.__all__
-['HttpImporter', 'add_remote_repo', 'remove_remote_repo', 'remote_repo', 'github_repo', 'bitbucket_repo']
-```
-```python
 >>> with httpimport.remote_repo(['package1','package2','package3'], 'http://my-codes.example.com/python_packages'):
 ... 	import package1
 ...
@@ -24,10 +19,10 @@ A feature that _Python2/3_ **misses** and has become popular in other languages 
 ```python
 >>> with httpimport.github_repo('operatorequals', 'covertutils', branch = master):
 ...     import covertutils
-... # Also works with 'bitbucket_repo'
+... # Also works with 'bitbucket_repo' and 'gitlab_repo'
 ```
 ```python
->>> # A depends to B and B depends to C (A, B, C : Python modules/packages in different domains):
+>>> # A depends on B and B depends on C (A, B, C : Python modules/packages in different domains):
 >>> # A exists in "repo_a.my-codes.example.com"	|
 >>> # B exists in "repo_b.my-codes.example.com" | <-- Different domains
 >>> # C exists in "repo_c.my-codes.example.com" |
