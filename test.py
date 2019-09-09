@@ -18,6 +18,8 @@ from random import randint
 
 class Test( unittest.TestCase ) :
 
+	PORT=8000
+
 	def tearDown(self):
 		if 'test_package' in sys.modules:
 			del sys.modules['test_package']
@@ -26,21 +28,15 @@ class Test( unittest.TestCase ) :
 		if 'test_package.b' in sys.modules:
 			del sys.modules['test_package.b']
 
-			print (sys.modules.keys())
-
-	PORT=8000
+		# print (sys.modules.keys())
 
 
-	# def __init__(self)
+	def test_simple_HTTP(self) :
+		httpimport.INSECURE = True
+		with httpimport.remote_repo(['test_package'], base_url = 'http://localhost:%d/' % self.PORT) :
+			from test_package import module1
 
-
-	# def test_simple_HTTP(self) :
-	# 	self._run_webserver()
-	# 	httpimport.INSECURE = True
-	# 	with httpimport.remote_repo(['test_package'], base_url = 'http://localhost:%d/' % self.PORT) :
-	# 		from test_package import module1
-
-	# 	self.assertTrue(module1.dummy_str)	# If this point is reached then the module1 is imported succesfully!
+		self.assertTrue(module1.dummy_str)	# If this point is reached then the module1 is imported succesfully!
 
 
 	def test_zip_import(self):
