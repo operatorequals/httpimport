@@ -98,7 +98,7 @@ class Test( unittest.TestCase ) :
 	def test_bitbucket_repo(self) :
 		print ("[+] Importing from BiBucket")
 		with httpimport.bitbucket_repo('atlassian', 'python-bitbucket', module = 'pybitbucket'):
-		    import pybitbucket
+			import pybitbucket
 
 		self.assertTrue(pybitbucket)
 		del sys.modules['pybitbucket']
@@ -117,13 +117,34 @@ class Test( unittest.TestCase ) :
 def _run_webserver():
 	# ============== Setting up an HTTP server at 'http://localhost:8001/' in current directory
 
-	try :
-		Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
-		httpd = SocketServer.TCPServer(("", Test.PORT), Handler)
-	except :
-		Handler = http.server.SimpleHTTPRequestHandler
-		httpd = socketserver.TCPServer(("", Test.PORT), Handler)
-		
+	# https://stackoverflow.com/questions/39801718/how-to-run-a-http-server-which-serve-a-specific-path
+	try:
+		# python 2
+		from SimpleHTTPServer import SimpleHTTPRequestHandler
+		from BaseHTTPServer import HTTPServer as BaseHTTPServer
+	except ImportError:
+		# python 3
+		from http.server import HTTPServer as BaseHTTPServer, SimpleHTTPRequestHandler
+
+
+	class HTTPHandler(SimpleHTTPRequestHandler):
+		"""This handler uses server.base_path instead of always using os.getcwd()"""
+		def translate_path(self, path):
+			path = SimpleHTTPRequestHandler.translate_path(self, path)
+			relpath = os.path.relpath(path, os.getcwd())
+			fullpath = os.path.join(self.server.base_path, relpath)
+			return fullpath
+
+
+	class HTTPServer(BaseHTTPServer):
+		"""The main server, you pass in base_path which is the path you want to serve requests from"""
+		def __init__(self, base_path, server_address, RequestHandlerClass=HTTPHandler):
+			self.base_path = base_path
+			BaseHTTPServer.__init__(self, server_address, RequestHandlerClass)
+
+	web_dir = "test_web_directory"
+	httpd = HTTPServer(web_dir, ("", Test.PORT))
+
 	print ("Serving at port %d" % Test.PORT)
 	http_thread = Thread( target = httpd.serve_forever, )
 	http_thread.daemon = True
@@ -133,5 +154,6 @@ def _run_webserver():
 	# ============== Wait until HTTP server is ready
 	sleep(1)
 
-
 _run_webserver()
+# while True:
+# 	sleep(1)
