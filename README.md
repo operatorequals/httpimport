@@ -1,5 +1,5 @@
 # `httpimport`
-### *Python's missing feature!*
+## *Python's missing feature!*
 
 _Remote_, _in-memory_ Python _package/module_ `import`ing **through HTTP/S**
 
@@ -7,9 +7,9 @@ _Remote_, _in-memory_ Python _package/module_ `import`ing **through HTTP/S**
 
 A feature that _Python2/3_ **misses** and has become popular in other languages is the **remote loading of packages/modules**.
 
-`httpimport` lets a *Python2/3* packages/modules to be imported directly in Python interpreter's process memory, through **remote `URIs`**, and *more*...
+`httpimport` lets *Python2/3* packages and modules to be imported directly in Python interpreter's process memory, through **remote `URIs`**, and *more*...
 
-### Example - In a Nutshell
+## Example - In a Nutshell
 
 ```python
 >>> with httpimport.remote_repo(['package1','package2','package3'], 'http://my-codes.example.com/python_packages'):
@@ -17,10 +17,11 @@ A feature that _Python2/3_ **misses** and has become popular in other languages 
 ...
 ```
 ```python
->>> with httpimport.github_repo('operatorequals', 'covertutils', branch = master):
+>>> with httpimport.github_repo('operatorequals', 'covertutils', branch = 'master'):
 ...     import covertutils
 ... # Also works with 'bitbucket_repo' and 'gitlab_repo'
 ```
+###
 ```python
 >>> # A depends on B and B depends on C (A, B, C : Python modules/packages in different domains):
 >>> # A exists in "repo_a.my-codes.example.com"	|
@@ -39,67 +40,27 @@ A feature that _Python2/3_ **misses** and has become popular in other languages 
 <module 'package1' from 'http://my-codes.example.com/python_packages/package1/__init__.py'>
 ```
 
-### Example - The Whole Picture 
-
-Using the `SimpleHTTPServer`, a whole directory can be served through HTTP as follows:
-
-```bash
-user@hostname:/tmp/test_directory$ ls -R
-.:
-test_package
-
-./test_package:
-__init__.py  __init__.pyc  module1.py  module2.py
-user@hostname:/tmp/test_directory$
-user@hostname:/tmp/test_directory$ python -m SimpleHTTPServer &
-[1] 9565
-Serving HTTP on 0.0.0.0 port 8000 ...
-
-user@hostname:/tmp/test_directory$
-user@hostname:/tmp/test_directory$
-user@hostname:/tmp/test_directory$ curl http://localhost:8000/test_package/module1.py
-127.0.0.1 - - [22/Aug/2017 17:42:49] "GET /test_package/module1.py HTTP/1.1" 200 -
-
-
-def dummy_func() : return 'Function Loaded'
-
-
-class dummy_class :
-
-	def dummy_method(self) : return 'Class and method loaded'
-
-
-dummy_str = 'Constant Loaded'
-
-user@hostname:/tmp/test_directory$
-user@hostname:/tmp/test_directory$ curl http://localhost:8000/test_package/__init__.py
-127.0.0.1 - - [22/Aug/2017 17:45:20] "GET /test_package/__init__.py HTTP/1.1" 200 -
-__all__ = ["module1", "module2"]
-
-```
-
-Using this simple built-in feature of `Py2/3`, a custom importer can been created, that given a base URL and a list of package names, it fetches and automatically loads all modules and packages to the local namespace.
-
 
 ### Usage
 
 #### Making the HTTP repo
 
 ```bash
-user@hostname:/tmp/test_directory$ ls -R
+/tmp/test_directory$ ls -R
 .:
 test_package
 
 ./test_package:
 __init__.py  __init__.pyc  module1.py  module2.py
 
-user@hostname:/tmp/test_directory$
-user@hostname:/tmp/test_directory$ python -m SimpleHTTPServer
+/tmp/test_directory$
+/tmp/test_directory$ python -m SimpleHTTPServer
 Serving HTTP on 0.0.0.0 port 8000 ...
 
 ```
 
 ### Importing Remotely
+
 #### `add_remote_repo()` and `remove_remote_repo()`
 
 These 2 functions will _add_ and _remove_ to the default `sys.meta_path` custom `HttpImporter` objects, given the URL they will look for packages/modules and a list of packages/modules its one can serve.
@@ -123,6 +84,8 @@ ImportError: No module named module1
 
 ```
 
+### Contexts
+
 #### The `remote_repo()` context
 _Adding_ and _removing_ Remote Repos can be a pain, _specially_ if there are packages that are available in **more than one** repos. So the `with` keyword does the trick again:
 
@@ -145,52 +108,12 @@ ImportError: cannot import name module2
 <function dummy_func at 0x7f7a8a170410>
 ```
 
-### Reload module (setting `httpimport.RELOAD` flag):
-```python
-import importlib
-import httpimport
-
-httpimport.INSECURE = True
-
-with httpimport.remote_repo(['mod'], 'http://localhost:8000/a'):
-    import mod
-    print(mod.module_name())
-
-with httpimport.remote_repo(['mod'], 'http://localhost:8000/b'):
-    importlib.reload(mod)
-    import mod
-    print(mod.module_name())
-
-httpimport.RELOAD = True  # Allow reload module
-
-with httpimport.remote_repo(['mod'], 'http://localhost:8000/b'):
-    importlib.reload(mod)
-    import mod
-    print(mod.module_name())
-```
-
-### The Tiny Test for your amusement
-
-The `test.py` file contains a minimal test. Try changing working directories and package names and see what happens...
-
-```bash
-$ python test.py
-serving at port 8000
-127.0.0.1 - - [22/Aug/2017 17:36:44] code 404, message File not found
-127.0.0.1 - - [22/Aug/2017 17:36:44] "GET /test_package/module1/__init__.py HTTP/1.1" 404 -
-127.0.0.1 - - [22/Aug/2017 17:36:44] "GET /test_package/module1.py HTTP/1.1" 200 -
-Constant Loaded
-Function Loaded
-Class and method loaded
-
-```
-
 ## The _Github_ Use Case!
 
 Such HTTP Servers (serving Python packages in a _directory structured way_) can be found in the wild, not only created with `SimpleHTTPServer`.
 **Github repos can serve as Python HTTPS Repos as well!!!**
 
-### Here is an example with my beloved ``covertutils`` project:
+### Here is an example with my beloved `covertutils` project:
 ```python
 >>>
 >>> import covertutils
@@ -268,9 +191,19 @@ You can point to your own installation of *GitLab* by using the `domain` paramet
 ...
 >>>
 ```
-This covers the posibility of using `httpimport` to point development environments,
+This covers the posibility of using `httpimport` to target local development environments,
 which is a strong use case for `httpimport`.
 
+### The `load()` function (as of `0.5.10`)
+The `load()` function was added to make module loading possible without `Namespace` pollution.
+It is used to programmatically load a module in a variable, and call its objects directly from that variable.
+```python
+>>> import httpimport
+>>> pack1 = httpimport.load('test_package','http://localhost:8000/')
+>>> pack1
+<module 'test_package' from 'http://localhost:8000//test_package/__init__.py'>
+>>>
+```
 
 ## Recursive Dependencies
 If package `A` requires module `B` and `A` exists in `http://example.com/a_repo/`, while `B` exists in `http://example.com/b_repo/`, then `A` can be imported using the following technique:
@@ -292,23 +225,7 @@ Any combination of *packages* and *modules* can be imported this way!
 
 *The `[!]` Warning was emitted by the `HttpImporter` object created for `A`, as it couldn't locate `B`, and passed control to the next `Finder` object, that happened to be the `HttpImporter` object created for `B`!*
 
-## The `load()` function (as of `0.5.10`)
-The `load()` function was added to make module loading possible without `Namespace` pollution.
-```python
->>> import httpimport
->>> pack1 = httpimport.load('random-package','http://localhost:8000/')
->>> pack1
-<module 'random-package' from 'http://localhost:8000//random-package/__init__.py'>
->>>
->>> # Trying to load 'os' module from the URL will fail, as it won't delegate to to other Finders/Loaders.
->>> httpimport.load('os','http://localhost:8000/')
-[!] 'non-existent-package' not found in HTTP repository. Moving to next Finder.
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-  File "httpimport.py", line 287, in load
-    raise ImportError("Module '%s' cannot be imported from '%s'" % (module_name, url) )
-ImportError: Module 'os' cannot be imported from 'http://localhost:8000/'
-```
+
 
 #### And no data touches the disk, nor any virtual environment. The import happens just to the running Python process!
 ### Life suddenly got simpler for Python module testing!!!
@@ -342,7 +259,6 @@ LOADER=================
 >>>
 ```
 
-
 ## Beware: **Huge Security Implications!**
 _Using the `httpimport` with **HTTP URLs** is highly discouraged outside the `localhost` interface!_
   
@@ -356,7 +272,7 @@ This will directly result in _Remote Code Execution_ to your current user's cont
 >>> # Importing from plain HTTP ...
 >>> httpimport.load('test_module', 'http://localhost:8000//')
 [!] Using non HTTPS URLs ('http://localhost:8000//') can be a security hazard!
-[-] 'httpimport.INSECURE is not set! Aborting...
+[-] 'httpimport.INSECURE' is not set! Aborting...
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
   File "httpimport.py", line 302, in load
@@ -375,6 +291,4 @@ ImportError: Module 'test_module' cannot be imported from URL: 'http://localhost
 #### You have been warned! Use **HTTPS URLs** with `httpimport`!
 
 
-#### Did I hear you say "Staging protocol for [covertutils](https://github.com/operatorequals/covertutils) backdoors"?
-
-Technique documentation on [using `httpimport` to stage `covertutils` backdoor code](http://covertutils.readthedocs.io/en/latest/staging_exec.html), making *EXE packed* and *unreadable* code load *non-included module dependencies*.
+##### This project has started to suggest stager code for HTTP/S RATs made with [covertutils](https://github.com/operatorequals/covertutils). The Documentation for minifying and using `httpimport` for such purposes can be [found here](http://covertutils.readthedocs.io/en/latest/staging_exec.html).
