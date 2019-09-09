@@ -48,15 +48,31 @@ Load a package/module that depends on other packages/modules through HTTP/S
 #### Making the HTTP repo
 
 ```bash
-/tmp/test_directory$ ls -R
-.:
-test_package
+$ ls -lR
+test_web_directory/:                                                         
+total 16                                                                     
+drwxrwxr-x. 4 user user 4096 Sep  9 20:54 test_package                       
+[...]                  
+                                                                             
+test_web_directory/test_package:                                             
+total 20                                                                     
+drwxrwxr-x. 2 user user 4096 Sep  9 20:54 a                                  
+drwxrwxr-x. 2 user user 4096 Sep  9 20:54 b                                  
+-rw-rw-r--. 1 user user   33 Sep  9 20:54 __init__.py                        
+-rw-rw-r--. 1 user user  160 Sep  9 20:54 module1.py                         
+-rw-rw-r--. 1 user user  160 Sep  9 20:54 module2.py                         
+                                                                             
+test_web_directory/test_package/a:                                           
+total 4                                                                      
+-rw-rw-r--. 1 user user  0 Sep  9 20:54 __init__.py                          
+-rw-rw-r--. 1 user user 41 Sep  9 20:54 mod.py                               
+                                                                             
+test_web_directory/test_package/b:                                           
+total 4
+-rw-rw-r--. 1 user user  0 Sep  9 20:54 __init__.py
+-rw-rw-r--. 1 user user 41 Sep  9 20:54 mod.py
 
-./test_package:
-__init__.py  __init__.pyc  module1.py  module2.py
-
-/tmp/test_directory$
-/tmp/test_directory$ python -m SimpleHTTPServer
+$ python -m SimpleHTTPServer
 Serving HTTP on 0.0.0.0 port 8000 ...
 
 ```
