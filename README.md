@@ -9,26 +9,26 @@ A feature that _Python2/3_ **misses** and has become popular in other languages 
 
 `httpimport` lets *Python2/3* packages and modules to be imported directly in Python interpreter's process memory, through **remote `URIs`**, and *more*...
 
-## Example - In a Nutshell
+## Examples
 Load a simple package/module through HTTP/S
 ```python
 >>> with httpimport.remote_repo(['package1','package2','package3'], 'http://my-codes.example.com/python_packages'):
 ... 	import package1
 ...
 ```
-Load directly from GitHub repo
+Load directly from a GitHub/BitBucket/GitLab repo
 ```python
 >>> with httpimport.github_repo('operatorequals', 'covertutils', branch = 'master'):
 ...     import covertutils
 ... # Also works with 'bitbucket_repo' and 'gitlab_repo'
 ```
-Load a package/module from HTTP/S directly to variable
+Load a package/module from HTTP/S directory directly to a variable
 ```python
 >>> module_object = httpimport.load('package1', 'http://my-codes.example.com/python_packages')
 >>> module_object
 <module 'package1' from 'http://my-codes.example.com/python_packages/package1/__init__.py'>
 ```
-Load a package/module that depends on other packages/modules through HTTP/S
+Load a package/module that depends on other packages/modules in different HTTP/S directories
 ```python
 >>> # A depends on B and B depends on C (A, B, C : Python modules/packages in different domains):
 >>> # A exists in "repo_a.my-codes.example.com" |
@@ -42,11 +42,7 @@ Load a package/module that depends on other packages/modules through HTTP/S
 >>>
 ```
 
-
-### Usage
-
-#### Making the HTTP repo
-
+### Serving a package through HTTP/S
 ```bash
 $ ls -lR
 test_web_directory/:                                                         
@@ -77,6 +73,8 @@ Serving HTTP on 0.0.0.0 port 8000 ...
 
 ```
 
+## Usage
+
 ### Importing Remotely
 
 #### `add_remote_repo()` and `remove_remote_repo()`
@@ -84,7 +82,8 @@ Serving HTTP on 0.0.0.0 port 8000 ...
 These 2 functions will _add_ and _remove_ to the default `sys.meta_path` custom `HttpImporter` objects, given the URL they will look for packages/modules and a list of packages/modules its one can serve.
 
 ```python
->>> import test_package
+>>> import test_package### Contexts
+
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
 ImportError: No module named test_package
@@ -105,11 +104,10 @@ ImportError: No module named module1
 ### Contexts
 
 #### The `remote_repo()` context
-_Adding_ and _removing_ Remote Repos can be a pain, _specially_ if there are packages that are available in **more than one** repos. So the `with` keyword does the trick again:
+_Adding_ and _removing_ remote repos can be a pain, _especially_ if there are packages that are available in **more than one** repos. So the `with` keyword does the trick again:
 
 ```python
 >>> from httpimport import remote_repo
->>>
 >>>
 >>> with remote_repo(['test_package'], 'http://localhost:8000/') :
 ...     from test_package import module1
@@ -126,33 +124,9 @@ ImportError: cannot import name module2
 <function dummy_func at 0x7f7a8a170410>
 ```
 
-## The _Github_ Use Case!
+#### The _Github_ Use Case!
 
-Such HTTP Servers (serving Python packages in a _directory structured way_) can be found in the wild, not only created with `SimpleHTTPServer`.
-**Github repos can serve as Python HTTPS Repos as well!!!**
-
-### Here is an example with my beloved `covertutils` project:
-```python
->>>
->>> import covertutils
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-ImportError: No module named covertutils
->>>	# covertutils is not available through normal import!
->>>
->>> covertutils_url = 'https://raw.githubusercontent.com/operatorequals/covertutils/master/'
->>>
->>> from httpimport import remote_repo
->>>
->>> with remote_repo(['covertutils'], covertutils_url) :
-...     import covertutils
-...
->>> print covertutils.__author__
-John Torakis - operatorequals
-```
-
-
-### The **dedicated** `github_repo()` context:
+##### The **dedicated** `github_repo()` context:
 ```python
 >>> from httpimport import github_repo
 >>> with github_repo( 'operatorequals', 'covertutils', ) :
@@ -162,7 +136,7 @@ John Torakis - operatorequals
 'John Torakis - operatorequals'
 >>>
 ```
-#### What about branches?
+##### What about branches?
 ```python
 >>> from httpimport import github_repo
 >>> with github_repo( 'operatorequals', 'covertutils', branch='py3_compatibility' ) :
@@ -173,7 +147,7 @@ John Torakis - operatorequals
 >>>
 ```
 
-#### And ad-hoc commits too?
+##### And ad-hoc commits too?
 What if you need to stick to a fixed -_known to work_- commit?
 ```python
 >>> from httpimport import github_repo
@@ -184,7 +158,7 @@ What if you need to stick to a fixed -_known to work_- commit?
 'John Torakis - operatorequals'
 >>>
 ```
-### The newer sibling `bitbucket_repo()` (as of `0.5.9`)
+#### The newer sibling `bitbucket_repo()` (as of `0.5.9`)
 ```python
 >>> with bitbucket_repo('atlassian', 'python-bitbucket', module='pybitbucket'):
 ...     import pybitbucket
@@ -192,7 +166,7 @@ What if you need to stick to a fixed -_known to work_- commit?
 >>>
 ```
 
-### Another sibling `gitlab_repo()` (as of `0.5.17`)
+#### Another sibling `gitlab_repo()` (as of `0.5.17`)
 ```python
 >>> with gitlab_repo('harinathreddyk', 'python-gitlab', module='gitlab'):
 ...     from gitlab import const
@@ -200,7 +174,7 @@ What if you need to stick to a fixed -_known to work_- commit?
 >>>
 ```
 
-#### The `domain` parameter for `gitlab_repo()`
+##### The `domain` parameter for `gitlab_repo()`
 You can point to your own installation of *GitLab* by using the `domain` parameter:
 
 ```python
@@ -212,7 +186,7 @@ You can point to your own installation of *GitLab* by using the `domain` paramet
 This covers the posibility of using `httpimport` to target local development environments,
 which is a strong use case for `httpimport`.
 
-### The `load()` function (as of `0.5.10`)
+#### The `load()` function (as of `0.5.10`)
 The `load()` function was added to make module loading possible without `Namespace` pollution.
 It is used to programmatically load a module in a variable, and call its objects directly from that variable.
 ```python
@@ -222,6 +196,11 @@ It is used to programmatically load a module in a variable, and call its objects
 <module 'test_package' from 'http://localhost:8000//test_package/__init__.py'>
 >>>
 ```
+
+*Life suddenly got simpler for Python module testing!!!*
+
+Imagine the breeze of testing _Pull Requests_ and packages that you aren't sure they are worth your download.
+
 
 ## Recursive Dependencies
 If package `A` requires module `B` and `A` exists in `http://example.com/a_repo/`, while `B` exists in `http://example.com/b_repo/`, then `A` can be imported using the following technique:
@@ -243,11 +222,6 @@ Any combination of *packages* and *modules* can be imported this way!
 
 *The `[!]` Warning was emitted by the `HttpImporter` object created for `A`, as it couldn't locate `B`, and passed control to the next `Finder` object, that happened to be the `HttpImporter` object created for `B`!*
 
-
-
-#### And no data touches the disk, nor any virtual environment. The import happens just to the running Python process!
-### Life suddenly got simpler for Python module testing!!!
-Imagine the breeze of testing _Pull Requests_ and packages that you aren't sure they will work for you!
 
 
 ## Debugging...
