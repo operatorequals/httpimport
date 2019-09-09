@@ -61,7 +61,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
     def __init__(self, modules, base_url, zip=False, zip_pwd=None):
         if zip_pwd is not None and zip == False:
             raise IllegalArgumentException(
-                    "Zip File password is set but not 'zip' parameter is not specified"
+                    "Zip File password is set but the 'zip' parameter is not enabled"
                 )
 
         self.module_names = modules
@@ -242,23 +242,23 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
 @contextmanager
 # Default 'python -m SimpleHTTPServer' URL
-def remote_repo(modules, base_url='http://localhost:8000/', zip=False):
+def remote_repo(modules, base_url='http://localhost:8000/', zip=False, zip_pwd=None):
     '''
 Context Manager that provides remote import functionality through a URL.
 The parameters are the same as the HttpImporter class contructor.
     '''
-    importer = add_remote_repo(modules, base_url, zip=zip)
+    importer = add_remote_repo(modules, base_url, zip=zip, zip_pwd=zip_pwd)
     yield
     remove_remote_repo(base_url)
 
 
 # Default 'python -m SimpleHTTPServer' URL
-def add_remote_repo(modules, base_url='http://localhost:8000/', zip=False):
+def add_remote_repo(modules, base_url='http://localhost:8000/', zip=False, zip_pwd=None):
     '''
 Function that creates and adds to the 'sys.meta_path' an HttpImporter object.
 The parameters are the same as the HttpImporter class contructor.
     '''
-    importer = HttpImporter(modules, base_url, zip=zip)
+    importer = HttpImporter(modules, base_url, zip=zip, zip_pwd=zip_pwd)
     sys.meta_path.insert(0, importer)
     return importer
 
