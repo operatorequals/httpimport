@@ -10,34 +10,36 @@ A feature that _Python2/3_ **misses** and has become popular in other languages 
 `httpimport` lets *Python2/3* packages and modules to be imported directly in Python interpreter's process memory, through **remote `URIs`**, and *more*...
 
 ## Example - In a Nutshell
-
+Load a simple package/module through HTTP/S
 ```python
 >>> with httpimport.remote_repo(['package1','package2','package3'], 'http://my-codes.example.com/python_packages'):
 ... 	import package1
 ...
 ```
+Load directly from GitHub repo
 ```python
 >>> with httpimport.github_repo('operatorequals', 'covertutils', branch = 'master'):
 ...     import covertutils
 ... # Also works with 'bitbucket_repo' and 'gitlab_repo'
 ```
-###
-```python
->>> # A depends on B and B depends on C (A, B, C : Python modules/packages in different domains):
->>> # A exists in "repo_a.my-codes.example.com"	|
->>> # B exists in "repo_b.my-codes.example.com" | <-- Different domains
->>> # C exists in "repo_c.my-codes.example.com" |
->>> with httpimport.remote_repo(['C'], 'http://repo_c.my-codes.example.com/python_packages'):
-...	 with httpimport.remote_repo(['B'], 'http://repo_b.my-codes.example.com/python_packages'):
-...		with httpimport.remote_repo(['A'], 'http://repo_a.my-codes.example.com/python_packages'):
-... 	import A
-... # Asks for A, Searches for B, Asks for B, Searches for C, Asks for C --> Resolves --> Imports A
->>>
-```
+Load a package/module from HTTP/S directly to variable
 ```python
 >>> module_object = httpimport.load('package1', 'http://my-codes.example.com/python_packages')
 >>> module_object
 <module 'package1' from 'http://my-codes.example.com/python_packages/package1/__init__.py'>
+```
+Load a package/module that depends on other packages/modules through HTTP/S
+```python
+>>> # A depends on B and B depends on C (A, B, C : Python modules/packages in different domains):
+>>> # A exists in "repo_a.my-codes.example.com" |
+>>> # B exists in "repo_b.my-codes.example.com" | <-- Different domains
+>>> # C exists in "repo_c.my-codes.example.com" |
+>>> with httpimport.remote_repo(['C'], 'http://repo_c.my-codes.example.com/python_packages'):
+...  with httpimport.remote_repo(['B'], 'http://repo_b.my-codes.example.com/python_packages'):
+...   with httpimport.remote_repo(['A'], 'http://repo_a.my-codes.example.com/python_packages'):
+...   import A
+... # Asks for A, Searches for B, Asks for B, Searches for C, Asks for C --> Resolves --> Imports A
+>>>
 ```
 
 
