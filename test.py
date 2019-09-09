@@ -110,8 +110,19 @@ class Test( unittest.TestCase ) :
 # 		self.assertTrue(kwant)
 
 
+	def test_load_http(self) :
+		httpimport.INSECURE = True
+		pack = httpimport.load('test_package', 'http://localhost:%d/' % self.PORT)
+		self.assertTrue(pack)	# If this point is reached then the module1 is imported succesfully!
+
+
+
+
+
+
+
+# ============== Setting up an HTTP server at 'http://localhost:8001/' in current directory
 def _run_webserver():
-	# ============== Setting up an HTTP server at 'http://localhost:8001/' in current directory
 
 	# https://stackoverflow.com/questions/39801718/how-to-run-a-http-server-which-serve-a-specific-path
 	try:
