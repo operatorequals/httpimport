@@ -101,6 +101,17 @@ ImportError: No module named module1
 
 ```
 
+### The `load()` function (as of `0.5.10`)
+The `load()` function was added to make module loading possible without `Namespace` pollution.
+It is used to programmatically load a module in a variable, and call its objects directly from that variable.
+```python
+>>> import httpimport
+>>> pack1 = httpimport.load('test_package','http://localhost:8000/')
+>>> pack1
+<module 'test_package' from 'http://localhost:8000//test_package/__init__.py'>
+>>>
+```
+
 ### Contexts
 
 #### The `remote_repo()` context
@@ -186,16 +197,32 @@ You can point to your own installation of *GitLab* by using the `domain` paramet
 This covers the posibility of using `httpimport` to target local development environments,
 which is a strong use case for `httpimport`.
 
-#### The `load()` function (as of `0.5.10`)
-The `load()` function was added to make module loading possible without `Namespace` pollution.
-It is used to programmatically load a module in a variable, and call its objects directly from that variable.
+
+### Import remote (encrypted) ZIP files (as of `0.5.18`)
+After version `0.5.18` the `add_remote_repo` and the `load` functions,
+as well as the `remote_repo` context got the `zip` and `zip_pwd` parameters.
+By pointing to a HTTP/S URL containing a ZIP file, it is possible to remotely load modules/packages included in it,
+*without downloading the ZIP file to disk*!
 ```python
->>> import httpimport
->>> pack1 = httpimport.load('test_package','http://localhost:8000/')
->>> pack1
-<module 'test_package' from 'http://localhost:8000//test_package/__init__.py'>
+>>> with httpimport.remote_repo(
+...     ['test_package'], base_url='http://localhost:8000/test_package.zip',
+...     zip=True
+...     ):
+...    import test_package
+...
 >>>
 ```
+#### Using a ZIP password (`zip_pwd` parameter)
+```python
+>>> with httpimport.remote_repo(
+...     ['test_package'], base_url='http://localhost:8000/test_package.enc.zip',
+...     zip=True, zip_pwd=b'P@ssw0rd!'
+...     ):
+...    import test_package
+...
+>>>
+```
+
 
 *Life suddenly got simpler for Python module testing!!!*
 
