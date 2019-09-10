@@ -103,11 +103,11 @@ class Test( unittest.TestCase ) :
 # 	def test_gitlab_repo(self) :
 # 		print ("[+] Importing from GitLab")
 # # https://gitlab.kwant-project.org/kwant/kwant
-# 		with httpimport.gitlab_repo('kwant', 'kwant'):
-# 			import kwant
+# 		with httpimport.gitlab_repo('gitmate', 'open-source/IGitt', module='IGitt'):
+# 			import IGitt
 # 		# with httpimport.gitlab_repo('harinathreddyk', 'python-gitlab', module='gitlab'):
 # 		# 	from gitlab import const as gitlab
-# 		self.assertTrue(kwant)
+# 		self.assertTrue(IGitt)
 
 
 	def test_load_http(self) :
