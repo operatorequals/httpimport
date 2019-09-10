@@ -10,9 +10,9 @@ import httpimport
 # https://bons.ai/blog/markdown-for-pypi ->
 # https://github.com/BonsaiAI/bonsai-config/blob/0.3.1/setup.py#L9
 try:
-	from pypandoc import convert
+	from pypandoc import convert_file
 
-	def read_md(f): return convert(f, 'rst').replace("~",'^')	# Hack to pass the 'rst_lint.py' - PyPI
+	def read_md(f): return convert_file(f, 'rst').replace("~",'^')	# Hack to pass the 'rst_lint.py' - PyPI
 
 except ImportError:
 	print("warning: pypandoc module not found, could not convert Markdown to RST")
