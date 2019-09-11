@@ -10,7 +10,7 @@ import sys, os
 from threading import Thread
 from time import sleep
 
-import httpimport
+import httpimport_old as httpimport
 
 import unittest
 from random import randint

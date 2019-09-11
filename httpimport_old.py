@@ -17,15 +17,18 @@ limitations under the License.
 import types
 import sys
 import logging
+import io
+import zipfile
+import os
 
 from contextlib import contextmanager
 try:
     from urllib2 import urlopen
-except:
+except ImportError:
     from urllib.request import urlopen
 
-__author__ = 'John Torakis (operatorequals) and Terra Brown (superloach)'
-__version__ = '0.5.16'
+__author__ = 'John Torakis - operatorequals'
+__version__ = '0.6.0'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 log_FORMAT = "%(message)s"
@@ -48,11 +51,11 @@ RELOAD = False
 LEGACY = (sys.version_info.major == 2)
 
 if LEGACY:
-	logger.warning("[!] LEGACY flag automatically enabled for Python 2.")
-	import imp
-	logger.warning("[!] Using imp (deprecated) instead of importlib.")
+    logger.warning("[!] LEGACY flag automatically enabled for Python 2.")
+    import imp
+    logger.warning("[!] Using imp (deprecated) instead of importlib.")
 else:
-	import importlib
+    import importlib
 
 class HttpImporter(object):
     """
@@ -63,11 +66,18 @@ The 'base_url' parameter is a string containing the URL where the repository/dir
 It is better to not use this class directly, but through its wrappers ('remote_repo', 'github_repo', etc) that automatically load and unload this class' objects to the 'sys.meta_path' list.
     """
 
-    def __init__(self, modules, base_url):
+    def __init__(self, modules, base_url, zip=False, zip_pwd=None):
+        if zip_pwd is not None and zip == False:
+            raise IllegalArgumentException(
+                    "Zip File password is set but the 'zip' parameter is not enabled"
+                )
+
         self.module_names = modules
         self.base_url = base_url + '/'
         self.non_source = NON_SOURCE
         self.in_progress = {}
+        self.zip = zip
+        self.__zip_pwd = zip_pwd
 
         if not INSECURE and not self.__isHTTPS(base_url) :
             logger.warning("[-] '%s.INSECURE' is not set! Aborting..." % (__name__))
@@ -75,6 +85,30 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
         if not self.__isHTTPS(base_url):
             logger.warning("[!] Using non HTTPS URLs ('%s') can be a security hazard!" % self.base_url)
+
+        if self.zip:
+            self.z = urlopen(base_url).read()
+            zio = io.BytesIO(self.z)
+            self.zfile = zipfile.ZipFile(zio)
+            logger.info("[+] ZIP file loaded successfully from '%s'!" % self.base_url)
+            self._paths = [
+                    x.filename
+                    # "/".join(x.filename.split('/')[traverse_dir:])
+                    for x in self.zfile.filelist
+                ]
+
+
+    def _mod_to_paths(self, fullname):
+        # get the python module name
+        py_filename = fullname.replace(".", os.sep) + ".py"
+        # get the filename if it is a package/subpackage
+        py_package = fullname.replace(".", os.sep, fullname.count(".") - 1) + "/__init__.py"
+        if py_filename in self._paths:
+            return py_filename
+        elif py_package in self._paths:
+            return py_package
+        else:
+            return None
 
 
     def find_module(self, fullname, path=None):
@@ -96,7 +130,10 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             if LEGACY:
                 loader = imp.find_module(fullname, path)
             else:
-                loader = importlib.util.find_spec(fullname, path)
+                try:    # After Python3.5
+                    loader = importlib.util.find_spec(fullname, path)
+                except AttributeError:
+                    loader = importlib.find_loader(fullname, path)
             if loader:
                 logger.info("[-] Found locally!")
                 return None
@@ -107,8 +144,13 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             logger.info("[-] Found locally!")
             return None
 
-        logger.info("[*]Module/Package '%s' can be loaded!" % fullname)
+        if self.zip:
+            logger.info("[@] Checking if module exists in loaded ZIP file >")
+            if self._mod_to_paths(fullname) is  None:
+                logger.info("[-] Not Found in ZIP file!")
+                return None
 
+        logger.info("[*]Module/Package '%s' can be loaded!" % fullname)
         del(self.in_progress[fullname])
         return self
 
@@ -127,53 +169,68 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             if LEGACY: imp.release_lock()
             return sys.modules[name.split('.')[-1]]
 
+        if self.zip:
+            zip_name = self._mod_to_paths(name)
+            if not zip_name in self._paths:
+                logger.info('[-] Requested module/package "%s" name not available in ZIP file list!' % zip_name)
+                if LEGACY: imp.release_lock()
+                raise ImportError(zip_name)
+
         module_url = self.base_url + '%s.py' % name.replace('.', '/')
         package_url = self.base_url + '%s/__init__.py' % name.replace('.', '/')
-        zip_url = self.base_url + '%s.zip' % name.replace('.', '/')
         final_url = None
         final_src = None
 
-        try:
-            logger.debug("[+] Trying to import as package from: '%s'" % package_url)
-            package_src = None
-            if self.non_source :    # Try the .pyc file
-                package_src = self.__fetch_compiled(package_url)
-            if package_src == None :
-                package_src = urlopen(package_url).read()
+        if self.zip:
+            package_src = self.zfile.open(zip_name, 'r', pwd=self.__zip_pwd).read()
+            logger.info('[+] Source from zipped file "%s" loaded!' % zip_name)       
             final_src = package_src
-            final_url = package_url
-        except IOError as e:
-            package_src = None
-            logger.info("[-] '%s' is not a package:" % name)
 
-        if final_src == None:
+        else:
             try:
-                logger.debug("[+] Trying to import as module from: '%s'" % module_url)
-                module_src = None
+                logger.debug("[+] Trying to import as package from: '%s'" % package_url)
+                package_src = None
                 if self.non_source :    # Try the .pyc file
-                    module_src = self.__fetch_compiled(module_url)
-                if module_src == None : # .pyc file not found, falling back to .py
-                    module_src = urlopen(module_url).read()
-                final_src = module_src
-                final_url = module_url
+                    package_src = self.__fetch_compiled(package_url)
+                if package_src == None :
+                    package_src = urlopen(package_url).read()
+                final_src = package_src
+                final_url = package_url
             except IOError as e:
-                module_src = None
-                logger.info("[-] '%s' is not a module:" % name)
-                logger.warning("[!] '%s' not found in HTTP repository. Moving to next Finder." % name)
-                if LEGACY: imp.release_lock()
-                return None
+                package_src = None
+                logger.info("[-] '%s' is not a package:" % name)
+
+            if final_src == None:
+                try:
+                    logger.debug("[+] Trying to import as module from: '%s'" % module_url)
+                    module_src = None
+                    if self.non_source :    # Try the .pyc file
+                        module_src = self.__fetch_compiled(module_url)
+                    if module_src == None : # .pyc file not found, falling back to .py
+                        module_src = urlopen(module_url).read()
+                    final_src = module_src
+                    final_url = module_url
+                except IOError as e:
+                    module_src = None
+                    logger.info("[-] '%s' is not a module:" % name)
+                    logger.warning("[!] '%s' not found in HTTP repository. Moving to next Finder." % name)
+                    if LEGACY: imp.release_lock()
+                    return None
 
         logger.debug("[+] Importing '%s'" % name)
+        # mod = imp.new_module(name)
         mod = types.ModuleType(name)
         mod.__loader__ = self
         mod.__file__ = final_url
-
         if not package_src:
             mod.__package__ = name
         else:
             mod.__package__ = name.split('.')[0]
 
-        mod.__path__ = ['/'.join(mod.__file__.split('/')[:-1]) + '/']
+        try:
+            mod.__path__ = ['/'.join(mod.__file__.split('/')[:-1]) + '/']
+        except:
+            mod.__path__ = self.base_url
         logger.debug("[+] Ready to execute '%s' code" % name)
         sys.modules[name] = mod
         exec(final_src, mod.__dict__)
@@ -207,23 +264,23 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
 @contextmanager
 # Default 'python -m SimpleHTTPServer' URL
-def remote_repo(modules, base_url='http://localhost:8000/'):
+def remote_repo(modules, base_url='http://localhost:8000/', zip=False, zip_pwd=None):
     '''
 Context Manager that provides remote import functionality through a URL.
 The parameters are the same as the HttpImporter class contructor.
     '''
-    importer = add_remote_repo(modules, base_url)
+    importer = add_remote_repo(modules, base_url, zip=zip, zip_pwd=zip_pwd)
     yield
     remove_remote_repo(base_url)
 
 
 # Default 'python -m SimpleHTTPServer' URL
-def add_remote_repo(modules, base_url='http://localhost:8000/'):
+def add_remote_repo(modules, base_url='http://localhost:8000/', zip=False, zip_pwd=None):
     '''
 Function that creates and adds to the 'sys.meta_path' an HttpImporter object.
 The parameters are the same as the HttpImporter class contructor.
     '''
-    importer = HttpImporter(modules, base_url)
+    importer = HttpImporter(modules, base_url, zip=zip, zip_pwd=zip_pwd)
     sys.meta_path.insert(0, importer)
     return importer
 
@@ -252,13 +309,26 @@ Creates the HTTPS URL that points to the raw contents of a github repository.
 
 def __create_bitbucket_url(username, repo, branch='master'):
     '''
-Creates the HTTPS URL that points to the raw contents of a github repository.
+Creates the HTTPS URL that points to the raw contents of a bitbucket repository.
     '''
     bitbucket_raw_url = 'https://bitbucket.org/{user}/{repo}/raw/{branch}/'
     return bitbucket_raw_url.format(user=username, repo=repo, branch=branch)
 
+def __create_gitlab_url(username, repo, branch='master', domain='gitlab.com'):
+    '''
+Creates the HTTPS URL that points to the raw contents of a gitlab repository.
+    '''
 
-def _add_git_repo(url_builder, username=None, repo=None, module=None, branch=None, commit=None):
+    '''
+    Gitlab returns a 308 response code for redirects,
+    so the URLs have to be exact, as urllib recognises 308 as error.
+    '''
+    gitlab_raw_url = 'https://{domain}/{user}/{repo}/raw/{branch}'
+    return gitlab_raw_url.format(user=username, repo=repo, branch=branch, domain=domain)
+
+
+
+def _add_git_repo(url_builder, username=None, repo=None, module=None, branch=None, commit=None, **kw):
     '''
 Function that creates and adds to the 'sys.meta_path' an HttpImporter object equipped with a URL of a Online Git server.
 The 'url_builder' parameter is a function that accepts the username, repo and branch/commit, and creates a HTTP/S URL of a Git server. Compatible functions are '__create_github_url', '__create_bitbucket_url'.
@@ -281,7 +351,7 @@ The 'branch' and 'commit' parameters cannot be both populated at the same call. 
         module = repo
     if type(module) == str:
         module = [module]
-    url = url_builder(username, repo, branch)
+    url = url_builder(username, repo, branch, **kw)
     return add_remote_repo(module, url)
 
 
@@ -310,7 +380,20 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
     remove_remote_repo(importer.base_url)
 
 
-def load(module_name, url = 'http://localhost:8000/'):
+
+@contextmanager
+def gitlab_repo(username=None, repo=None, module=None, branch=None, commit=None, domain='gitlab.com'):
+    '''
+Context Manager that provides import functionality from Github repositories through HTTPS.
+The parameters are the same as the '_add_git_repo' function. No 'url_builder' function is needed.
+    '''
+    importer = _add_git_repo(__create_gitlab_url,
+        username, repo, module=module, branch=branch, commit=commit, domain=domain)
+    yield
+    remove_remote_repo(importer.base_url)
+
+
+def load(module_name, url = 'http://localhost:8000/', zip=False, zip_pwd=None):
     '''
 Loads a module on demand and returns it as a module object. Does NOT load it to the Namespace.
 Example:
@@ -320,7 +403,7 @@ Example:
 <module 'covertutils' from 'http://localhost:8000//covertutils/__init__.py'>
 >>> 
     '''
-    importer = HttpImporter([module_name], url)
+    importer = HttpImporter([module_name], url, zip=zip, zip_pwd=zip_pwd)
     loader = importer.find_module(module_name)
     if loader != None :
         module = loader.load_module(module_name)
@@ -339,5 +422,5 @@ __all__ = [
     'remote_repo',
     'github_repo',
     'bitbucket_repo',
-
+    'gitlab_repo'
 ]
