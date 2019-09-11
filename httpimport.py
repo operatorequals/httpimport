@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 
-import imp
+import types
 import sys
 import logging
 import io
@@ -28,7 +28,7 @@ except ImportError:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.5.18'
+__version__ = '0.6.0'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 log_FORMAT = "%(message)s"
@@ -48,6 +48,14 @@ logger.setLevel(logging.WARN)
 NON_SOURCE = False
 INSECURE = False
 RELOAD = False
+LEGACY = (sys.version_info.major == 2)
+
+if LEGACY:
+    logger.warning("[!] LEGACY flag automatically enabled for Python 2.")
+    import imp
+    logger.warning("[!] Using imp (deprecated) instead of importlib.")
+else:
+    import importlib
 
 class HttpImporter(object):
     """
@@ -67,6 +75,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         self.module_names = modules
         self.base_url = base_url + '/'
         self.non_source = NON_SOURCE
+        self.in_progress = {}
         self.zip = zip
         self.__zip_pwd = zip_pwd
 
@@ -111,9 +120,20 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             logger.info("[-] Not found!")
             return None
 
+        if fullname in self.in_progress:
+            return None
+
+        self.in_progress[fullname] = True
+
         logger.info("[@] Checking if built-in >")
         try:
-            loader = imp.find_module(fullname, path)
+            if LEGACY:
+                loader = imp.find_module(fullname, path)
+            else:
+                try:    # After Python3.5
+                    loader = importlib.util.find_spec(fullname, path)
+                except AttributeError:
+                    loader = importlib.find_loader(fullname, path)
             if loader:
                 logger.info("[-] Found locally!")
                 return None
@@ -131,28 +151,29 @@ It is better to not use this class directly, but through its wrappers ('remote_r
                 return None
 
         logger.info("[*]Module/Package '%s' can be loaded!" % fullname)
+        del(self.in_progress[fullname])
         return self
 
 
     def load_module(self, name):
-        imp.acquire_lock()
+        if LEGACY: imp.acquire_lock()
         logger.debug("LOADER=================")
         logger.debug("[+] Loading %s" % name)
         if name in sys.modules and not RELOAD:
             logger.info('[+] Module "%s" already loaded!' % name)
-            imp.release_lock()
+            if LEGACY: imp.release_lock()
             return sys.modules[name]
 
         if name.split('.')[-1] in sys.modules and not RELOAD:
             logger.info('[+] Module "%s" loaded as a top level module!' % name)
-            imp.release_lock()
+            if LEGACY: imp.release_lock()
             return sys.modules[name.split('.')[-1]]
 
         if self.zip:
             zip_name = self._mod_to_paths(name)
             if not zip_name in self._paths:
                 logger.info('[-] Requested module/package "%s" name not available in ZIP file list!' % zip_name)
-                imp.release_lock()
+                if LEGACY: imp.release_lock()
                 raise ImportError(zip_name)
 
         module_url = self.base_url + '%s.py' % name.replace('.', '/')
@@ -193,11 +214,14 @@ It is better to not use this class directly, but through its wrappers ('remote_r
                     module_src = None
                     logger.info("[-] '%s' is not a module:" % name)
                     logger.warning("[!] '%s' not found in HTTP repository. Moving to next Finder." % name)
-                    imp.release_lock()
+                    if LEGACY: imp.release_lock()
                     return None
 
         logger.debug("[+] Importing '%s'" % name)
-        mod = imp.new_module(name)
+        if LEGACY:
+            mod = imp.new_module(name)
+        else:
+            mod = types.ModuleType(name)
         mod.__loader__ = self
         mod.__file__ = final_url
         if not package_src:
@@ -213,7 +237,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         sys.modules[name] = mod
         exec(final_src, mod.__dict__)
         logger.info("[+] '%s' imported succesfully!" % name)
-        imp.release_lock()
+        if LEGACY: imp.release_lock()
         return mod
 
     def __fetch_compiled(self, url) :
@@ -248,8 +272,12 @@ Context Manager that provides remote import functionality through a URL.
 The parameters are the same as the HttpImporter class contructor.
     '''
     importer = add_remote_repo(modules, base_url, zip=zip, zip_pwd=zip_pwd)
-    yield
-    remove_remote_repo(base_url)
+    try:
+        yield
+    except ImportError as e:
+        raise e
+    finally:    # Always remove the added HttpImporter from sys.meta_path 
+        remove_remote_repo(base_url)
 
 
 # Default 'python -m SimpleHTTPServer' URL
@@ -341,8 +369,12 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
     '''
     importer = _add_git_repo(__create_github_url,
         username, repo, module=module, branch=branch, commit=commit)
-    yield
-    remove_remote_repo(importer.base_url)
+    try:
+        yield
+    except ImportError as e:
+        raise e
+    finally:    # Always remove the added HttpImporter from sys.meta_path 
+        remove_remote_repo(importer.base_url)
 
 
 
@@ -354,8 +386,12 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
     '''
     importer = _add_git_repo(__create_bitbucket_url,
         username, repo, module=module, branch=branch, commit=commit)
-    yield
-    remove_remote_repo(importer.base_url)
+    try:
+        yield
+    except ImportError as e:
+        raise e
+    finally:    # Always remove the added HttpImporter from sys.meta_path 
+        remove_remote_repo(importer.base_url)
 
 
 
@@ -367,8 +403,12 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
     '''
     importer = _add_git_repo(__create_gitlab_url,
         username, repo, module=module, branch=branch, commit=commit, domain=domain)
-    yield
-    remove_remote_repo(importer.base_url)
+    try:
+        yield
+    except ImportError as e:    
+        raise e
+    finally:    # Always remove the added HttpImporter from sys.meta_path 
+        remove_remote_repo(importer.base_url)
 
 
 def load(module_name, url = 'http://localhost:8000/', zip=False, zip_pwd=None):
