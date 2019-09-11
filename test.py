@@ -34,9 +34,9 @@ class Test( unittest.TestCase ) :
 	def test_simple_HTTP(self) :
 		httpimport.INSECURE = True
 		with httpimport.remote_repo(['test_package'], base_url = 'http://localhost:%d/' % self.PORT) :
-			from test_package import module1
+			import test_package
 
-		self.assertTrue(module1.dummy_str)	# If this point is reached then the module1 is imported succesfully!
+		self.assertTrue(test_package)
 
 
 	def test_zip_import(self):
