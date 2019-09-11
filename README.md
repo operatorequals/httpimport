@@ -5,7 +5,7 @@ _Remote_, _in-memory_ Python _package/module_ `import`ing **through HTTP/S**
 
 [![PyPI version](https://badge.fury.io/py/httpimport.svg)](https://pypi.python.org/pypi/httpimport)
 [![Build Status](https://travis-ci.org/operatorequals/httpimport.svg?branch=tests)](https://travis-ci.org/operatorequals/httpimport)
-https://github.com/operatorequals/httpimport/raw/tests/coverage.svg
+![Coverage Badge](https://raw.githubusercontent.com/operatorequals/httpimport/tests/coverage.svg?sanitize=true)
 
 A feature that _Python2/3_ **misses** and has become popular in other languages is the **remote loading of packages/modules**.
 
