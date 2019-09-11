@@ -369,8 +369,12 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
     '''
     importer = _add_git_repo(__create_github_url,
         username, repo, module=module, branch=branch, commit=commit)
-    yield
-    remove_remote_repo(importer.base_url)
+    try:
+        yield
+    except ImportError as e:
+        raise e
+    finally:    # Always remove the added HttpImporter from sys.meta_path 
+        remove_remote_repo(importer.base_url)
 
 
 
@@ -382,8 +386,12 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
     '''
     importer = _add_git_repo(__create_bitbucket_url,
         username, repo, module=module, branch=branch, commit=commit)
-    yield
-    remove_remote_repo(importer.base_url)
+    try:
+        yield
+    except ImportError as e:
+        raise e
+    finally:    # Always remove the added HttpImporter from sys.meta_path 
+        remove_remote_repo(importer.base_url)
 
 
 
@@ -395,8 +403,12 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
     '''
     importer = _add_git_repo(__create_gitlab_url,
         username, repo, module=module, branch=branch, commit=commit, domain=domain)
-    yield
-    remove_remote_repo(importer.base_url)
+    try:
+        yield
+    except ImportError as e:    
+        raise e
+    finally:    # Always remove the added HttpImporter from sys.meta_path 
+        remove_remote_repo(importer.base_url)
 
 
 def load(module_name, url = 'http://localhost:8000/', zip=False, zip_pwd=None):
