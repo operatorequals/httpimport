@@ -49,7 +49,6 @@ NON_SOURCE = False
 INSECURE = False
 RELOAD = False
 LEGACY = (sys.version_info.major == 2)
-LEGACY = True
 
 if LEGACY:
     logger.warning("[!] LEGACY flag automatically enabled for Python 2.")
@@ -273,8 +272,12 @@ Context Manager that provides remote import functionality through a URL.
 The parameters are the same as the HttpImporter class contructor.
     '''
     importer = add_remote_repo(modules, base_url, zip=zip, zip_pwd=zip_pwd)
-    yield
-    remove_remote_repo(base_url)
+    try:
+        yield
+    except ImportError as e:
+        raise e
+    finally:    # Always remove the added HttpImporter from sys.meta_path 
+        remove_remote_repo(base_url)
 
 
 # Default 'python -m SimpleHTTPServer' URL

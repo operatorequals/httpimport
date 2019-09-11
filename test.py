@@ -10,7 +10,6 @@ import sys, os
 from threading import Thread
 from time import sleep
 
-# import httpimport_pr as httpimport
 import httpimport
 
 import unittest
@@ -28,7 +27,7 @@ class Test( unittest.TestCase ) :
 			del sys.modules['test_package.a']
 		if 'test_package.b' in sys.modules:
 			del sys.modules['test_package.b']
-
+		# print(sys.meta_path)
 		# print (sys.modules.keys())
 
 
