@@ -311,3 +311,10 @@ ImportError: Module 'test_module' cannot be imported from URL: 'http://localhost
 
 
 ##### This project has started to suggest stager code for HTTP/S RATs made with [covertutils](https://github.com/operatorequals/covertutils). The Documentation for minifying and using `httpimport` for such purposes can be [found here](http://covertutils.readthedocs.io/en/latest/staging_exec.html).
+
+
+### Contributors
+
+* [ldsink](https://github.com/ldsink) - The `RELOAD` flag and Bug Fixes
+* [lavvy](https://github.com/lavvy) - the `load()` function
+* [superloach](https://github.com/superloach) - Deprecation of `imp` module in Python3 in favour of `importlib`
