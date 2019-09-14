@@ -43,6 +43,17 @@ Load a package/module that depends on other packages/modules in different HTTP/S
 ... # Asks for A, Searches for B, Asks for B, Searches for C, Asks for C --> Resolves --> Imports A
 >>>
 ```
+Load Python packages from archives served through HTTP/S
+```python
+>>> # with httpimport.remote_repo(['test_package'], 'http://example.com/packages.tar'):
+>>> # with httpimport.remote_repo(['test_package'], 'http://example.com/packages.tar.bz2'):
+>>> # with httpimport.remote_repo(['test_package'], 'http://example.com/packages.tar.gz'):
+>>> # with httpimport.remote_repo(['test_package'], 'http://example.com/packages.tar.xz'): <-- Python3 Only
+>>> with httpimport.remote_repo(['test_package'], 'http://example.com/packages.zip'):
+... 	import test_package
+...
+>>>
+```
 
 ### Serving a package through HTTP/S
 ```bash
