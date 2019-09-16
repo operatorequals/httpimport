@@ -323,7 +323,26 @@ ImportError: Module 'test_module' cannot be imported from URL: 'http://localhost
 #### You have been warned! Use **HTTPS URLs** with `httpimport`!
 
 
+### Minification
+
 ##### This project has started to suggest stager code for HTTP/S RATs made with [covertutils](https://github.com/operatorequals/covertutils). The Documentation for minifying and using `httpimport` for such purposes can be [found here](http://covertutils.readthedocs.io/en/latest/staging_exec.html).
+
+Further minification can be achieved by [python-minifier](https://python-minifier.com/), also available in [PyPI](https://pypi.org/project/python-minifier/). So a minified version can be obtained as follows:
+```bash
+pip install python-minifer    # the "pyminify" command
+curl https://raw.githubusercontent.com/operatorequals/httpimport/master/httpimport.py | sed 's#log.*#pass#g' | grep -v "import pass" | pyminify - > httpimport_min.py
+```
+size reduction:
+```bash
+# Original Size Count
+$ curl https://raw.githubusercontent.com/operatorequals/httpimport/0.7.1/httpimport.py |  wc 
+[...]
+504    1914   18876
+# Minified Size Count
+$ curl https://raw.githubusercontent.com/operatorequals/httpimport/0.7.1/httpimport.py | sed 's#log.*#pass#g' | grep -v "import pass" | pyminify - | wc 
+[...]
+177     936   12141
+```
 
 
 ### Contributors
