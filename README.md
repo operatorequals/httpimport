@@ -331,3 +331,4 @@ ImportError: Module 'test_module' cannot be imported from URL: 'http://localhost
 * [ldsink](https://github.com/ldsink) - The `RELOAD` flag and Bug Fixes
 * [lavvy](https://github.com/lavvy) - the `load()` function
 * [superloach](https://github.com/superloach) - Deprecation of `imp` module in Python3 in favour of `importlib`
+* [yanliakos](https://github.com/yanliakos) - Bug Fix
