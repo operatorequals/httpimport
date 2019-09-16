@@ -32,8 +32,6 @@ __author__ = 'John Torakis - operatorequals'
 __version__ = '0.7.1'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
-log_FORMAT = "%(message)s"
-logging.basicConfig(format=log_FORMAT)
 
 '''
 To enable debug logging set:
@@ -42,9 +40,17 @@ To enable debug logging set:
 
 in your script.
 '''
+
+log_level = logging.WARN
+log_format = '%(message)s'
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARN)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(log_level)
+log_handler = logging.StreamHandler()
+log_handler.setLevel(log_level)
+log_formatter = logging.Formatter(log_format)
+log_handler.setFormatter(log_formatter)
+logger.addHandler(log_handler)
 
 NON_SOURCE = False
 INSECURE = False
