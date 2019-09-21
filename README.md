@@ -1,5 +1,6 @@
 # `httpimport`
 ## *Python's missing feature!*
+##### [The feature has been suggested in Python Mailing List](https://lwn.net/Articles/732194/)
 
 _Remote_, _in-memory_ Python _package/module_ `import`ing **through HTTP/S**
 
@@ -219,7 +220,6 @@ By pointing to a HTTP/S URL containing a ZIP file, it is possible to remotely lo
 ```python
 >>> with httpimport.remote_repo(
 ...     ['test_package'], base_url='http://localhost:8000/test_package.zip',
-...     zip=True
 ...     ):
 ...    import test_package
 ...
@@ -229,7 +229,7 @@ By pointing to a HTTP/S URL containing a ZIP file, it is possible to remotely lo
 ```python
 >>> with httpimport.remote_repo(
 ...     ['test_package'], base_url='http://localhost:8000/test_package.enc.zip',
-...     zip=True, zip_pwd=b'P@ssw0rd!'
+...     zip_pwd=b'P@ssw0rd!'
 ...     ):
 ...    import test_package
 ...
