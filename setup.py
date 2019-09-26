@@ -35,9 +35,26 @@ setup(name='httpimport',
 	  url=httpimport.__github__,
 	  py_modules=['httpimport'],
 	  classifiers=[
+		'Development Status :: 6 - Mature',
+
+		'License :: OSI Approved :: Apache Software License',
+
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.7',
+
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy',
+
  		'Intended Audience :: Developers',
+		'Intended Audience :: Information Technology',
+
+		'Topic :: Software Development :: Libraries :: Python Modules',
+		'Topic :: Software Development :: Build Tools',
+		'Topic :: Software Development :: Testing',
+
+		
+
 	 	  ],
   	  keywords = ['import',
   	  	'loader',
