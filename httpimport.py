@@ -29,7 +29,7 @@ except ImportError:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.7.2'
+__version__ = '0.7.3'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 
@@ -112,19 +112,29 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         if self.is_archive:
             logger.info("[+] Archive file loaded successfully from '%s'!" % self.base_url)
             self._paths = _list_archive(self.archive)
-            # # "/".join(x.filename.split('/')[traverse_dir:])
 
-    def _mod_to_paths(self, fullname):
+
+    def _mod_to_filepaths(self, fullname, compiled=False):
+        suffix = '.pyc' if compiled else '.py'
         # get the python module name
-        py_filename = fullname.replace(".", os.sep) + ".py"
+        py_filename = fullname.replace(".", os.sep) + suffix
         # get the filename if it is a package/subpackage
-        py_package = fullname.replace(".", os.sep, fullname.count(".") - 1) + "/__init__.py"
-        if py_filename in self._paths:
-            return py_filename
-        elif py_package in self._paths:
-            return py_package
+        py_package = fullname.replace(".", os.sep, fullname.count(".") - 1) + "/__init__" + suffix
+
+        if self.is_archive:
+            return {'module': py_filename, 'package': py_package}
         else:
-            return None
+            # if self.in_progress:
+            # py_package = fullname.replace(".", '/') + "/__init__" + suffix
+            return {
+            'module': self.base_url + py_filename,
+            'package': self.base_url + py_package
+            }
+
+
+    def _mod_in_archive(self, fullname, compiled=False):
+        paths = self._mod_to_filepaths(fullname, compiled=compiled)
+        return set(self._paths) & set(paths.values())
 
 
     def find_module(self, fullname, path=None):
@@ -162,11 +172,11 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
         if self.is_archive:
             logger.info("[@] Checking if module exists in loaded Archive file >")
-            if self._mod_to_paths(fullname) is  None:
+            if self._mod_in_archive(fullname) is None:
                 logger.info("[-] Not Found in Archive file!")
                 return None
 
-        logger.info("[*]Module/Package '%s' can be loaded!" % fullname)
+        logger.info("[*] Module/Package '%s' can be loaded!" % fullname)
         del(self.in_progress[fullname])
         return self
 
@@ -185,62 +195,29 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             if LEGACY: imp.release_lock()
             return sys.modules[name.split('.')[-1]]
 
-        if self.is_archive:
-            zip_name = self._mod_to_paths(name)
-            if not zip_name in self._paths:
-                logger.info('[-] Requested module/package "%s" name not available in Archive file list!' % zip_name)
-                if LEGACY: imp.release_lock()
-                raise ImportError(zip_name)
+        try:
+            mod_dict = self._open_module_src(name, compiled=NON_SOURCE)
+            module_src = mod_dict['source']
+            filepath = mod_dict['path']
+            module_type = mod_dict['type']
 
-        module_url = self.base_url + '%s.py' % name.replace('.', '/')
-        package_url = self.base_url + '%s/__init__.py' % name.replace('.', '/')
-        final_url = None
-        final_src = None
-
-        if self.is_archive:
-            package_src = _open_archive_file(self.archive, zip_name, 'r', zip_pwd=self.__zip_pwd).read()
-            logger.info('[+] Source from zipped file "%s" loaded!' % zip_name)       
-            final_src = package_src
-
-        else:
-            try:
-                logger.debug("[+] Trying to import as package from: '%s'" % package_url)
-                package_src = None
-                if self.non_source :    # Try the .pyc file
-                    package_src = self.__fetch_compiled(package_url)
-                if package_src == None :
-                    package_src = urlopen(package_url).read()
-                final_src = package_src
-                final_url = package_url
-            except IOError as e:
-                package_src = None
-                logger.info("[-] '%s' is not a package:" % name)
-
-            if final_src == None:
-                try:
-                    logger.debug("[+] Trying to import as module from: '%s'" % module_url)
-                    module_src = None
-                    if self.non_source :    # Try the .pyc file
-                        module_src = self.__fetch_compiled(module_url)
-                    if module_src == None : # .pyc file not found, falling back to .py
-                        module_src = urlopen(module_url).read()
-                    final_src = module_src
-                    final_url = module_url
-                except IOError as e:
-                    module_src = None
-                    logger.info("[-] '%s' is not a module:" % name)
-                    logger.warning("[!] '%s' not found in HTTP repository. Moving to next Finder." % name)
-                    if LEGACY: imp.release_lock()
-                    return None
+        except ValueError:
+            module_src = None
+            logger.info("[-] '%s' is not a module:" % name)
+            logger.warning("[!] '%s' not found in HTTP repository. Moving to next Finder." % name)
+            if LEGACY: imp.release_lock()
+            return None
 
         logger.debug("[+] Importing '%s'" % name)
+
         if LEGACY:
             mod = imp.new_module(name)
         else:
             mod = types.ModuleType(name)
+
         mod.__loader__ = self
-        mod.__file__ = final_url
-        if not package_src:
+        mod.__file__ = filepath
+        if module_type == 'package':
             mod.__package__ = name
         else:
             mod.__package__ = name.split('.')[0]
@@ -251,33 +228,80 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             mod.__path__ = self.base_url
         logger.debug("[+] Ready to execute '%s' code" % name)
         sys.modules[name] = mod
-        exec(final_src, mod.__dict__)
+        exec(module_src, mod.__dict__)
         logger.info("[+] '%s' imported succesfully!" % name)
         if LEGACY: imp.release_lock()
         return mod
 
-    def __fetch_compiled(self, url) :
+    def __fetch_compiled(self, module_compiled) :
         import marshal
         module_src = None
         try :
-            module_compiled = urlopen(url + 'c').read()  # from blah.py --> blah.pyc
-            try :
-                module_src = marshal.loads(module_compiled[8:]) # Strip the .pyc file header of Python up to 3.3
-                return module_src
-            except ValueError :
-                pass
-            try :
-                module_src = marshal.loads(module_compiled[12:])# Strip the .pyc file header of Python 3.3 and onwards (changed .pyc spec)
-                return module_src
-            except ValueError :
-                pass
-        except IOError as e:
-            logger.debug("[-] No compiled version ('.pyc') for '%s' module found!" % url.split('/')[-1])
-        return module_src
+            # Strip the .pyc file header of Python up to 3.3
+            module_src = marshal.loads(module_compiled[8:])
+            return module_src
+        except ValueError :
+            pass
+        try :
+            # Strip the .pyc file header of Python 3.3 and onwards (changed .pyc spec)
+            module_src = marshal.loads(module_compiled[12:])
+            return module_src
+        except ValueError :
+            pass
+
+        raise ValueError("[!] Not possible to unmarshal '.pyc' file")
 
 
     def __isHTTPS(self, url) :
         return self.base_url.startswith('https') 
+
+
+    def _open_module_src(self, fullname, compiled=False):
+
+        paths = self._mod_to_filepaths(fullname, compiled=compiled)
+        mod_type = 'module'
+        if self.is_archive:
+            try:
+                correct_filepath_set = set(self._paths) & set(paths.values())
+                filepath = correct_filepath_set.pop()
+            except KeyError:
+                raise ImportError("Module '%s' not found in archive" % fullname)
+
+            content = _open_archive_file(self.archive, filepath, 'r', zip_pwd=self.__zip_pwd).read()
+            if compiled:
+                src = self.__fetch_compiled(content)
+                logger.info('[+] Bytecode from archived file "%s" loaded!' % filepath)
+            else:
+                src = content
+                logger.info('[+] Source from archived file "%s" loaded!' % filepath)
+        else:
+            content = None
+            for mod_type in paths.keys():
+                filepath = paths[mod_type]
+                try:
+                    logger.debug("[*] Trying '%s' for module/package %s" % (filepath,fullname))
+                    content = urlopen(filepath).read()
+                    break
+                except IOError:
+                    logger.info("[-] '%s' is not a %s" % (fullname,mod_type))
+
+            if content is None:
+                raise ValueError("Module '%s' not found in URL '%s'" % (fullname,self.base_url))
+                # return None
+
+            if compiled:
+                src = self.__fetch_compiled(content)
+                logger.info("[+] Bytecode loaded from URL '%s'!'" % filepath)
+            else:
+                src = content
+                logger.info("[+] Source loaded from URL '%s'!'" % filepath)
+
+        return {
+            'source': src,
+            'path': filepath,
+            'type': mod_type
+        }
+
 
 def _open_archive_file(archive_obj, filepath, mode='r', zip_pwd=None):
     if isinstance(archive_obj, tarfile.TarFile):
@@ -322,7 +346,8 @@ def _detect_filetype(base_url):
     except zipfile.BadZipfile:
         logger.info("Response of '%s' is not a ZIP file" % base_url)
 
-    raise IOError("URL content is Invalid")
+    raise IOError("Content of URL '%s' is Invalid" % base_url)
+
 
 @contextmanager
 # Default 'python -m SimpleHTTPServer' URL
@@ -372,7 +397,6 @@ Creates the HTTPS URL that points to the raw contents of a github repository.
     github_raw_url = 'https://raw.githubusercontent.com/{user}/{repo}/{branch}/'
     return github_raw_url.format(user=username, repo=repo, branch=branch)
 
-
 def __create_bitbucket_url(username, repo, branch='master'):
     '''
 Creates the HTTPS URL that points to the raw contents of a bitbucket repository.
@@ -391,7 +415,6 @@ Creates the HTTPS URL that points to the raw contents of a gitlab repository.
     '''
     gitlab_raw_url = 'https://{domain}/{user}/{repo}/raw/{branch}'
     return gitlab_raw_url.format(user=username, repo=repo, branch=branch, domain=domain)
-
 
 
 def _add_git_repo(url_builder, username=None, repo=None, module=None, branch=None, commit=None, **kw):
@@ -437,7 +460,6 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
         remove_remote_repo(importer.base_url)
 
 
-
 @contextmanager
 def bitbucket_repo(username=None, repo=None, module=None, branch=None, commit=None):
     '''
@@ -452,7 +474,6 @@ The parameters are the same as the '_add_git_repo' function. No 'url_builder' fu
         raise e
     finally:    # Always remove the added HttpImporter from sys.meta_path 
         remove_remote_repo(importer.base_url)
-
 
 
 @contextmanager
@@ -488,7 +509,6 @@ Example:
         if module :
             return module
     raise ImportError("Module '%s' cannot be imported from URL: '%s'" % (module_name, url) )
-
 
 
 __all__ = [
