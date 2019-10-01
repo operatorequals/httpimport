@@ -29,7 +29,7 @@ except ImportError:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.7.3'
+__version__ = '0.8.0'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 
@@ -52,7 +52,6 @@ log_formatter = logging.Formatter(log_format)
 log_handler.setFormatter(log_formatter)
 logger.addHandler(log_handler)
 
-NON_SOURCE = False
 INSECURE = False
 RELOAD = False
 LEGACY = (sys.version_info.major == 2)
@@ -88,7 +87,6 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
         self.module_names = modules
         self.base_url = base_url + '/'
-        self.non_source = NON_SOURCE
         self.in_progress = {}
         self.__zip_pwd = zip_pwd
 
@@ -196,7 +194,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             return sys.modules[name.split('.')[-1]]
 
         try:
-            mod_dict = self._open_module_src(name, compiled=NON_SOURCE)
+            mod_dict = self._open_module_src(name)
             module_src = mod_dict['source']
             filepath = mod_dict['path']
             module_type = mod_dict['type']
@@ -233,25 +231,6 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         if LEGACY: imp.release_lock()
         return mod
 
-    def __fetch_compiled(self, module_compiled) :
-        import marshal
-        module_src = None
-        try :
-            # Strip the .pyc file header of Python up to 3.3
-            module_src = marshal.loads(module_compiled[8:])
-            return module_src
-        except ValueError :
-            pass
-        try :
-            # Strip the .pyc file header of Python 3.3 and onwards (changed .pyc spec)
-            module_src = marshal.loads(module_compiled[12:])
-            return module_src
-        except ValueError :
-            pass
-
-        raise ValueError("[!] Not possible to unmarshal '.pyc' file")
-
-
     def __isHTTPS(self, url) :
         return self.base_url.startswith('https') 
 
@@ -268,12 +247,8 @@ It is better to not use this class directly, but through its wrappers ('remote_r
                 raise ImportError("Module '%s' not found in archive" % fullname)
 
             content = _open_archive_file(self.archive, filepath, 'r', zip_pwd=self.__zip_pwd).read()
-            if compiled:
-                src = self.__fetch_compiled(content)
-                logger.info('[+] Bytecode from archived file "%s" loaded!' % filepath)
-            else:
-                src = content
-                logger.info('[+] Source from archived file "%s" loaded!' % filepath)
+            src = content
+            logger.info('[+] Source from archived file "%s" loaded!' % filepath)
         else:
             content = None
             for mod_type in paths.keys():
@@ -287,14 +262,9 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
             if content is None:
                 raise ValueError("Module '%s' not found in URL '%s'" % (fullname,self.base_url))
-                # return None
 
-            if compiled:
-                src = self.__fetch_compiled(content)
-                logger.info("[+] Bytecode loaded from URL '%s'!'" % filepath)
-            else:
-                src = content
-                logger.info("[+] Source loaded from URL '%s'!'" % filepath)
+            src = content
+            logger.info("[+] Source loaded from URL '%s'!'" % filepath)
 
         return {
             'source': src,
