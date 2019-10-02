@@ -9,9 +9,11 @@ _Remote_, _in-memory_ Python _package/module_ `import`ing **through HTTP/S**
 [![Build Status](https://travis-ci.org/operatorequals/httpimport.svg?branch=tests)](https://travis-ci.org/operatorequals/httpimport)
 ![Coverage Badge](https://raw.githubusercontent.com/operatorequals/httpimport/tests/coverage.svg?sanitize=true)
 
-![CPython 2.7](https://img.shields.io/badge/Works%20on-CPython%202.7-brightgreen)
-![CPython 3.4](https://img.shields.io/badge/Works%20on-CPython%203.4-green)
-![CPython 3.7](https://img.shields.io/badge/Works%20on-CPython%203.7-green)
+![CPython 2.7](https://img.shields.io/badge/Works%20on-CPython%202.7-green)
+![CPython 3.4](https://img.shields.io/badge/Works%20on-CPython%203.4-brightgreen)
+![CPython 3.7](https://img.shields.io/badge/Works%20on-CPython%203.7-brightgreen)
+![Pypy 2.7](https://img.shields.io/badge/Works%20on-Pypy%202.7-yellowgreen)
+![Pypy 3.6](https://img.shields.io/badge/Works%20on-Pypy%203.6-yellowgreen)
 ![Jython 2.7.1](https://img.shields.io/badge/Works%20on-Jython%202.7.1-orange)
 
 A feature that _Python2/3_ **misses** and has become popular in other languages is the **remote loading of packages/modules**.
