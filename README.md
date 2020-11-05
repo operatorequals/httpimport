@@ -21,7 +21,15 @@ A feature that _Python2/3_ **misses** and has become popular in other languages 
 `httpimport` lets *Python2/3* packages and modules to be imported directly in Python interpreter's process memory, through **remote `URIs`**, and *more*...
 
 ## Examples
-Load a python file from a github-gist (using [this gist](https://gist.github.com/operatorequals/ee5049677e7bbc97af2941d1d3f04ace)):
+
+Load a simple package/module through HTTP/S
+```python
+>>> with httpimport.remote_repo(['package1','package2','package3'], 'http://my-codes.example.com/python_packages'):
+... 	import package1
+...
+```
+Load directly from a GitHub/BitBucket/GitLab repo
+* Load a python file from a github-gist (using [this gist](https://gist.github.com/operatorequals/ee5049677e7bbc97af2941d1d3f04ace)):
 ```py
 import httpimport
 
@@ -30,13 +38,7 @@ with httpimport.remote_repo(["hello"], url):
     import hello
 hello.hello()
 ```
-Load a simple package/module through HTTP/S
-```python
->>> with httpimport.remote_repo(['package1','package2','package3'], 'http://my-codes.example.com/python_packages'):
-... 	import package1
-...
-```
-Load directly from a GitHub/BitBucket/GitLab repo
+
 ```python
 >>> with httpimport.github_repo('operatorequals', 'covertutils', branch = 'master'):
 ...     import covertutils
