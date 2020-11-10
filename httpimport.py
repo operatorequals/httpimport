@@ -21,6 +21,8 @@ import io
 import zipfile
 import tarfile
 import os
+import ssl
+import urllib
 
 from contextlib import contextmanager
 try:
@@ -32,6 +34,15 @@ __author__ = 'John Torakis - operatorequals'
 __version__ = '0.8.0'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
+'''
+
+context to allow self signed certificates
+
+'''
+
+c = ssl.create_default_context()
+c.check_hostname = False
+c.verify_mode = ssl.CERT_NONE
 
 '''
 To enable debug logging set:
@@ -52,6 +63,7 @@ log_formatter = logging.Formatter(log_format)
 log_handler.setFormatter(log_formatter)
 logger.addHandler(log_handler)
 
+VERIFY = True
 INSECURE = False
 RELOAD = False
 LEGACY = (sys.version_info.major == 2)
@@ -62,8 +74,6 @@ if LEGACY:
     logger.warning("[!] Using imp (deprecated) instead of importlib.")
 else:
     import importlib
-
-
 
 class HttpImporter(object):
     """
@@ -237,6 +247,11 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
     def _open_module_src(self, fullname, compiled=False):
 
+        global c
+
+        if VERIFY:
+            c = None
+
         paths = self._mod_to_filepaths(fullname, compiled=compiled)
         mod_type = 'module'
         if self.is_archive:
@@ -255,8 +270,16 @@ It is better to not use this class directly, but through its wrappers ('remote_r
                 filepath = paths[mod_type]
                 try:
                     logger.debug("[*] Trying '%s' for module/package %s" % (filepath,fullname))
-                    content = urlopen(filepath).read()
+                    content = urlopen(filepath, context=c).read()
                     break
+                except (urllib.error.URLError, ssl.SSLCertVerificationError) as e:
+                    try:
+                        if type(e.args[0]) == ssl.SSLCertVerificationError:
+                            logger.warning("[-] '%s.VERIFY' is not set! Aborting..." % (__name__))
+                            raise Exception("Self signed HTTPS URL provided with '%s.VERIFY' not set" % __name__) from None
+                            break
+                    except:
+                        pass
                 except IOError:
                     logger.info("[-] '%s' is not a %s" % (fullname,mod_type))
 
