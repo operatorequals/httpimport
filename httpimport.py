@@ -117,7 +117,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         # get the python module name
         py_filename = fullname.replace(".", os.sep) + suffix
         # get the filename if it is a package/subpackage
-        py_package = fullname.replace(".", os.sep, fullname.count(".") - 1) + "/__init__" + suffix
+        py_package = fullname.replace(".", os.sep) + "/__init__" + suffix
 
         if self.is_archive:
             return {'module': py_filename, 'package': py_package}
