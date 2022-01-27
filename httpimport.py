@@ -151,7 +151,7 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             else:
                 try:    # After Python3.5
                     loader = importlib.util.find_spec(fullname, path)
-                except AttributeError:
+                except (AttributeError, ValueError):
                     loader = importlib.find_loader(fullname, path)
             if loader:
                 logger.info("[-] Found locally!")
