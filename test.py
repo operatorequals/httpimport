@@ -37,23 +37,23 @@ class Test( unittest.TestCase ) :
 
   def test_simple_HTTP(self) :
     httpimport.INSECURE = True
-    with httpimport.remote_repo(['test_package'], base_url = 'http://localhost:%d/' % self.PORT) :
+    with httpimport.remote_repo(base_url = 'http://localhost:%d/' % self.PORT) :
       import test_package
     self.assertTrue(test_package)
 
   def test_dependent_HTTP(self) :
     httpimport.INSECURE = True
-    with httpimport.remote_repo(['test_package', 'dependent_module'], base_url = 'http://localhost:%d/' % self.PORT) :
+    with httpimport.remote_repo(base_url = 'http://localhost:%d/' % self.PORT) :
       import dependent_module
     self.assertTrue(dependent_module)
     
 
   def test_simple_HTTP_fail(self) :
     httpimport.INSECURE = True
-    with httpimport.remote_repo(['test_package'], base_url = 'http://localhost:%d/' % self.PORT) :
+    with httpimport.remote_repo(base_url = 'http://localhost:%d/' % self.PORT) :
       try:
         import test_package_nonexistent
-      except ImportError as e:
+      except (ImportError, KeyError) as e:
         self.assertTrue(e)
 
 
@@ -61,7 +61,6 @@ class Test( unittest.TestCase ) :
     self.assertFalse('test_package' in sys.modules)
     httpimport.INSECURE = True
     with httpimport.remote_repo(
-      ['test_package'],
       base_url = 'http://localhost:%d/test_package.zip' % self.PORT,
       ):
       import test_package
@@ -72,7 +71,6 @@ class Test( unittest.TestCase ) :
     self.assertFalse('test_package' in sys.modules)
     httpimport.INSECURE = True
     with httpimport.remote_repo(
-      ['test_package'],
       base_url = 'http://localhost:%d/test_package.tar.bz2' % self.PORT,
       ):
       import test_package
@@ -84,7 +82,6 @@ class Test( unittest.TestCase ) :
     httpimport.INSECURE = True
     try:
       with httpimport.remote_repo(
-        ['test_package'],
         base_url = 'http://localhost:%d/test_package.corrupted.tar' % self.PORT,
         ):
           import test_package
@@ -100,7 +97,6 @@ class Test( unittest.TestCase ) :
       return
     httpimport.INSECURE = True
     with httpimport.remote_repo(
-      ['test_package'],
       base_url = 'http://localhost:%d/test_package.tar.xz' % self.PORT,
       ):
       import test_package
@@ -111,7 +107,6 @@ class Test( unittest.TestCase ) :
     self.assertFalse('test_package' in sys.modules)
     httpimport.INSECURE = True
     with httpimport.remote_repo(
-      ['test_package'],
       base_url = 'http://localhost:%d/test_package.tar.gz' % self.PORT,
       ):
       import test_package
@@ -122,7 +117,6 @@ class Test( unittest.TestCase ) :
     self.assertFalse('test_package' in sys.modules)
     httpimport.INSECURE = True
     with httpimport.remote_repo(
-      ['test_package'],
       base_url = 'http://localhost:%d/test_package.tar' % self.PORT,
       ):
       import test_package
@@ -133,7 +127,6 @@ class Test( unittest.TestCase ) :
     self.assertFalse('test_package' in sys.modules)
     httpimport.INSECURE = True
     with httpimport.remote_repo(
-      ['test_package'],
       base_url = 'http://localhost:%d/test_package.enc.zip' % self.PORT,
       zip_pwd=b'P@ssw0rd!'#  <--- Correct Password
       ):
@@ -146,7 +139,6 @@ class Test( unittest.TestCase ) :
     httpimport.INSECURE = True
     try:
       with httpimport.remote_repo(
-        ['test_package'],
         base_url = 'http://localhost:%d/test_package.enc.zip' % self.PORT,
         zip_pwd=b'XXXXXXXX'  #  <--- Wrong Password
         ):

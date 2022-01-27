@@ -29,7 +29,7 @@ except ImportError:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.8.0'
+__version__ = '0.9.0'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 
@@ -83,9 +83,8 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         WEB_ARCHIVE
     ]
 
-    def __init__(self, modules, base_url, zip_pwd=None):
+    def __init__(self, base_url, zip_pwd=None):
 
-        self.module_names = modules
         self.base_url = base_url + '/'
         self.in_progress = {}
         self.__zip_pwd = zip_pwd
@@ -140,10 +139,6 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         logger.debug("[!] Searching %s" % fullname)
         logger.debug("[!] Path is %s" % path)
         logger.info("[@] Checking if in declared remote module names >")
-        if fullname.split('.')[0] not in self.module_names:
-            logger.info("[-] Not found!")
-            return None
-
         if fullname in self.in_progress:
             return None
 
@@ -321,12 +316,12 @@ def _detect_filetype(base_url):
 
 @contextmanager
 # Default 'python -m SimpleHTTPServer' URL
-def remote_repo(modules, base_url='http://localhost:8000/', zip_pwd=None):
+def remote_repo(base_url='http://localhost:8000/', zip_pwd=None):
     '''
 Context Manager that provides remote import functionality through a URL.
 The parameters are the same as the HttpImporter class contructor.
     '''
-    importer = add_remote_repo(modules, base_url, zip_pwd=zip_pwd)
+    importer = add_remote_repo(base_url, zip_pwd=zip_pwd)
     try:
         yield
     except ImportError as e:
@@ -336,12 +331,12 @@ The parameters are the same as the HttpImporter class contructor.
 
 
 # Default 'python -m SimpleHTTPServer' URL
-def add_remote_repo(modules, base_url='http://localhost:8000/', zip_pwd=None):
+def add_remote_repo(base_url='http://localhost:8000/', zip_pwd=None):
     '''
 Function that creates and adds to the 'sys.meta_path' an HttpImporter object.
 The parameters are the same as the HttpImporter class contructor.
     '''
-    importer = HttpImporter(modules, base_url, zip_pwd=zip_pwd)
+    importer = HttpImporter(base_url, zip_pwd=zip_pwd)
     sys.meta_path.insert(0, importer)
     return importer
 
@@ -411,7 +406,7 @@ The 'branch' and 'commit' parameters cannot be both populated at the same call. 
     if type(module) == str:
         module = [module]
     url = url_builder(username, repo, branch, **kw)
-    return add_remote_repo(module, url)
+    return add_remote_repo(url)
 
 
 @contextmanager
@@ -472,7 +467,7 @@ Example:
 <module 'covertutils' from 'http://localhost:8000//covertutils/__init__.py'>
 >>> 
     '''
-    importer = HttpImporter([module_name], url, zip_pwd=zip_pwd)
+    importer = HttpImporter(url, zip_pwd=zip_pwd)
     loader = importer.find_module(module_name)
     if loader != None :
         module = loader.load_module(module_name)
