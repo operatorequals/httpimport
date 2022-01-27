@@ -88,7 +88,7 @@ class Test( unittest.TestCase ) :
 				base_url = 'http://localhost:%d/test_package.corrupted.tar' % self.PORT,
 				):
 					import test_package
-		except ImportError as e:
+		except (ImportError, KeyError) as e:
 			self.assertTrue(e)
 		self.assertFalse('test_package' in sys.modules)	# If this point is reached then the module1 is imported succesfully!
 
