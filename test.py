@@ -151,28 +151,24 @@ class Test( unittest.TestCase ) :
 
   def test_github_repo(self) :
     print ("[+] Importing from GitHub")
-    with httpimport.github_repo( 'operatorequals', 'covertutils', ) :
-      import covertutils
-    self.assertTrue(covertutils)  # If this point is reached then the module1 is imported succesfully!
-    del sys.modules['covertutils']
-
+    with httpimport.github_repo( 'operatorequals', 'httpimport-test', module = 'test_package', branch='main') :
+      import test_package
+    self.assertTrue(test_package)  # If this point is reached then the module1 is imported succesfully!
+    del sys.modules['test_package']
 
   def test_bitbucket_repo(self) :
-    print ("[+] Importing from BiBucket")
-    with httpimport.bitbucket_repo('atlassian', 'python-bitbucket', module = 'pybitbucket'):
-      import pybitbucket
-
-    self.assertTrue(pybitbucket)
-    del sys.modules['pybitbucket']
-
+    print ("[+] Importing from BitBucket")
+    with httpimport.bitbucket_repo( 'operatorequals', 'httpimport-test', module = 'test_package', branch='main') :
+      import test_package
+    self.assertTrue(test_package)  # If this point is reached then the module1 is imported succesfully!
+    del sys.modules['test_package']
 
   def test_gitlab_repo(self) :
     print ("[+] Importing from GitLab")
-    with httpimport.gitlab_repo('operatorequals', 'httpimport-test', module='test_package', branch='main'):
+    with httpimport.gitlab_repo( 'operatorequals', 'httpimport-test', module = 'test_package', branch='main') :
       import test_package
-    self.assertTrue(test_package)
+    self.assertTrue(test_package)  # If this point is reached then the module1 is imported succesfully!
     del sys.modules['test_package']
-
 
   def test_load_http(self) :
     httpimport.INSECURE = True
