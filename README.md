@@ -24,7 +24,7 @@ A feature that _Python2/3_ **misses** and has become popular in other languages 
 
 Load a simple package/module through HTTP/S
 ```python
->>> with httpimport.remote_repo(['package1','package2','package3'], 'http://my-codes.example.com/python_packages'):
+>>> with httpimport.remote_repo('http://my-codes.example.com/python_packages'):
 ... 	import package1
 ...
 ```
@@ -56,20 +56,20 @@ Load a package/module that depends on other packages/modules in different HTTP/S
 >>> # A exists in "repo_a.my-codes.example.com" |
 >>> # B exists in "repo_b.my-codes.example.com" | <-- Different domains
 >>> # C exists in "repo_c.my-codes.example.com" |
->>> with httpimport.remote_repo(['C'], 'http://repo_c.my-codes.example.com/python_packages'):
-...  with httpimport.remote_repo(['B'], 'http://repo_b.my-codes.example.com/python_packages'):
-...   with httpimport.remote_repo(['A'], 'http://repo_a.my-codes.example.com/python_packages'):
+>>> with httpimport.remote_repo('http://repo_c.my-codes.example.com/python_packages'):
+...  with httpimport.remote_repo('http://repo_b.my-codes.example.com/python_packages'):
+...   with httpimport.remote_repo('http://repo_a.my-codes.example.com/python_packages'):
 ...   import A
 ... # Asks for A, Searches for B, Asks for B, Searches for C, Asks for C --> Resolves --> Imports A
 >>>
 ```
 Load Python packages from archives served through HTTP/S
 ```python
->>> # with httpimport.remote_repo(['test_package'], 'http://example.com/packages.tar'):
->>> # with httpimport.remote_repo(['test_package'], 'http://example.com/packages.tar.bz2'):
->>> # with httpimport.remote_repo(['test_package'], 'http://example.com/packages.tar.gz'):
->>> # with httpimport.remote_repo(['test_package'], 'http://example.com/packages.tar.xz'): <-- Python3 Only
->>> with httpimport.remote_repo(['test_package'], 'http://example.com/packages.zip'):
+>>> # with httpimport.remote_repo('http://example.com/packages.tar'):
+>>> # with httpimport.remote_repo('http://example.com/packages.tar.bz2'):
+>>> # with httpimport.remote_repo('http://example.com/packages.tar.gz'):
+>>> # with httpimport.remote_repo('http://example.com/packages.tar.xz'): <-- Python3 Only
+>>> with httpimport.remote_repo(['http://example.com/packages.zip'):
 ... 	import test_package
 ...
 >>>
@@ -123,7 +123,7 @@ ImportError: No module named test_package
 >>>
 >>> from httpimport import add_remote_repo, remove_remote_repo
 >>> # In the given URL the 'test_package/' is available
->>> add_remote_repo(['test_package'], 'http://localhost:8000/') #  
+>>> add_remote_repo('http://localhost:8000/') #  
 >>> import test_package
 >>>
 >>> remove_remote_repo('http://localhost:8000/')
@@ -153,7 +153,7 @@ _Adding_ and _removing_ remote repos can be a pain, _especially_ if there are pa
 ```python
 >>> from httpimport import remote_repo
 >>>
->>> with remote_repo(['test_package'], 'http://localhost:8000/') :
+>>> with remote_repo('http://localhost:8000/') :
 ...     from test_package import module1
 ...
 >>>
@@ -238,7 +238,7 @@ By pointing to a HTTP/S URL containing a ZIP file, it is possible to remotely lo
 *without downloading the ZIP file to disk*!
 ```python
 >>> with httpimport.remote_repo(
-...     ['test_package'], base_url='http://localhost:8000/test_package.zip',
+...     'http://localhost:8000/test_package.zip',
 ...     ):
 ...    import test_package
 ...
@@ -247,7 +247,7 @@ By pointing to a HTTP/S URL containing a ZIP file, it is possible to remotely lo
 #### Using a ZIP password (`zip_pwd` parameter)
 ```python
 >>> with httpimport.remote_repo(
-...     ['test_package'], base_url='http://localhost:8000/test_package.enc.zip',
+...     'http://localhost:8000/test_package.enc.zip',
 ...     zip_pwd=b'P@ssw0rd!'
 ...     ):
 ...    import test_package
@@ -265,8 +265,8 @@ Imagine the breeze of testing _Pull Requests_ and packages that you aren't sure 
 If package `A` requires module `B` and `A` exists in `http://example.com/a_repo/`, while `B` exists in `http://example.com/b_repo/`, then `A` can be imported using the following technique:
 ```python
 >>> from httpimport import remote_repo
->>> with remote_repo(['B'],"http://example.com/b_repo/") :
-...     with remote_repo(['A'],"http://example.com/a_repo/") :
+>>> with remote_repo("http://example.com/b_repo/") :
+...     with remote_repo("http://example.com/a_repo/") :
 ...             import A
 ... 
 [!] 'B' not found in HTTP repository. Moving to next Finder.
