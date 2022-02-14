@@ -4,31 +4,16 @@ from setuptools import setup
 import httpimport
 
 
-# Get the long description from the README file
-# And also convert to reST
-# MD to RST Convert Line acquired from:
-# https://bons.ai/blog/markdown-for-pypi ->
-# https://github.com/BonsaiAI/bonsai-config/blob/0.3.1/setup.py#L9
-try:
-    from pypandoc import convert_file
-
-    def read_md(f): return convert_file(f, 'rst').replace(
-        "~", '^')  # Hack to pass the 'rst_lint.py' - PyPI
-
-except ImportError:
-    print("warning: pypandoc module not found, could not convert Markdown to RST")
-    def read_md(f): return open(f, 'r').read()
-
-try:
-    long_description_str = read_md('README.md')
-except IOError as e:
-    long_description_str = 'https://github.com/operatorequals/httpimport/blob/master/README.md'
-
+# Taken from:
+# https://packaging.python.org/en/latest/tutorials/packaging-projects/
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
 setup(name='httpimport',
       version=httpimport.__version__,
       description='Module for remote in-memory Python package/module loading through HTTP',
-      long_description=long_description_str,
+      long_description=long_description,
+      long_description_content_type='text/markdown',
       author=httpimport.__author__,
       author_email='john.torakis@gmail.com',
       license='Apache2',
