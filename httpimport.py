@@ -29,7 +29,7 @@ except ImportError:
     from urllib.request import urlopen
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '0.9.0'
+__version__ = '0.9.1'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 
