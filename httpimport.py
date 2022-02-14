@@ -64,7 +64,6 @@ else:
     import importlib
 
 
-
 class HttpImporter(object):
     """
 The class that implements the Importer API. Contains the "find_module" and "load_module" methods.
@@ -89,34 +88,40 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         self.in_progress = {}
         self.__zip_pwd = zip_pwd
 
-        if not INSECURE and not self.__isHTTPS(base_url) :
-            logger.warning("[-] '%s.INSECURE' is not set! Aborting..." % (__name__))
-            raise Exception("Plain HTTP URL provided with '%s.INSECURE' not set" % __name__)
+        if not INSECURE and not self.__isHTTPS(base_url):
+            logger.warning(
+                "[-] '%s.INSECURE' is not set! Aborting..." % (__name__))
+            raise Exception(
+                "Plain HTTP URL provided with '%s.INSECURE' not set" % __name__)
 
         if not self.__isHTTPS(base_url):
-            logger.warning("[!] Using non HTTPS URLs ('%s') can be a security hazard!" % self.base_url)
+            logger.warning(
+                "[!] Using non HTTPS URLs ('%s') can be a security hazard!" % self.base_url)
 
         try:
             self.filetype, self.archive = _detect_filetype(base_url)
-            logger.info("[+] Filetype detected '%s' for '%s'" % (self.filetype, self.base_url))
+            logger.info("[+] Filetype detected '%s' for '%s'" %
+                        (self.filetype, self.base_url))
         except IOError:
-            raise ImportError("URL content cannot be detected or opened (%s)" % self.base_url)
+            raise ImportError(
+                "URL content cannot be detected or opened (%s)" % self.base_url)
 
         self.is_archive = False
         if self.filetype in [HttpImporter.TAR_ARCHIVE, HttpImporter.ZIP_ARCHIVE]:
             self.is_archive = True
 
         if self.is_archive:
-            logger.info("[+] Archive file loaded successfully from '%s'!" % self.base_url)
+            logger.info(
+                "[+] Archive file loaded successfully from '%s'!" % self.base_url)
             self._paths = _list_archive(self.archive)
-
 
     def _mod_to_filepaths(self, fullname, compiled=False):
         suffix = '.pyc' if compiled else '.py'
         # get the python module name
         py_filename = fullname.replace(".", os.sep) + suffix
         # get the filename if it is a package/subpackage
-        py_package = fullname.replace(".", os.sep, fullname.count(".") - 1) + "/__init__" + suffix
+        py_package = fullname.replace(
+            ".", os.sep, fullname.count(".") - 1) + "/__init__" + suffix
 
         if self.is_archive:
             return {'module': py_filename, 'package': py_package}
@@ -124,15 +129,13 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             # if self.in_progress:
             # py_package = fullname.replace(".", '/') + "/__init__" + suffix
             return {
-            'module': self.base_url + py_filename,
-            'package': self.base_url + py_package
+                'module': self.base_url + py_filename,
+                'package': self.base_url + py_package
             }
-
 
     def _mod_in_archive(self, fullname, compiled=False):
         paths = self._mod_to_filepaths(fullname, compiled=compiled)
         return set(self._paths) & set(paths.values())
-
 
     def find_module(self, fullname, path=None):
         logger.debug("FINDER=================")
@@ -164,7 +167,8 @@ It is better to not use this class directly, but through its wrappers ('remote_r
             return None
 
         if self.is_archive:
-            logger.info("[@] Checking if module exists in loaded Archive file >")
+            logger.info(
+                "[@] Checking if module exists in loaded Archive file >")
             if self._mod_in_archive(fullname) is None:
                 logger.info("[-] Not Found in Archive file!")
                 return None
@@ -173,19 +177,21 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         del(self.in_progress[fullname])
         return self
 
-
     def load_module(self, name):
-        if LEGACY: imp.acquire_lock()
+        if LEGACY:
+            imp.acquire_lock()
         logger.debug("LOADER=================")
         logger.debug("[+] Loading %s" % name)
         if name in sys.modules and not RELOAD:
             logger.info('[+] Module "%s" already loaded!' % name)
-            if LEGACY: imp.release_lock()
+            if LEGACY:
+                imp.release_lock()
             return sys.modules[name]
 
         if name.split('.')[-1] in sys.modules and not RELOAD:
             logger.info('[+] Module "%s" loaded as a top level module!' % name)
-            if LEGACY: imp.release_lock()
+            if LEGACY:
+                imp.release_lock()
             return sys.modules[name.split('.')[-1]]
 
         try:
@@ -197,8 +203,10 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         except ValueError:
             module_src = None
             logger.info("[-] '%s' is not a module:" % name)
-            logger.warning("[!] '%s' not found in HTTP repository. Moving to next Finder." % name)
-            if LEGACY: imp.release_lock()
+            logger.warning(
+                "[!] '%s' not found in HTTP repository. Moving to next Finder." % name)
+            if LEGACY:
+                imp.release_lock()
             return None
 
         logger.debug("[+] Importing '%s'" % name)
@@ -223,12 +231,12 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         sys.modules[name] = mod
         exec(module_src, mod.__dict__)
         logger.info("[+] '%s' imported succesfully!" % name)
-        if LEGACY: imp.release_lock()
+        if LEGACY:
+            imp.release_lock()
         return mod
 
-    def __isHTTPS(self, url) :
-        return self.base_url.startswith('https') 
-
+    def __isHTTPS(self, url):
+        return self.base_url.startswith('https')
 
     def _open_module_src(self, fullname, compiled=False):
 
@@ -239,24 +247,29 @@ It is better to not use this class directly, but through its wrappers ('remote_r
                 correct_filepath_set = set(self._paths) & set(paths.values())
                 filepath = correct_filepath_set.pop()
             except KeyError:
-                raise ImportError("Module '%s' not found in archive" % fullname)
+                raise ImportError(
+                    "Module '%s' not found in archive" % fullname)
 
-            content = _open_archive_file(self.archive, filepath, 'r', zip_pwd=self.__zip_pwd).read()
+            content = _open_archive_file(
+                self.archive, filepath, 'r', zip_pwd=self.__zip_pwd).read()
             src = content
-            logger.info('[+] Source from archived file "%s" loaded!' % filepath)
+            logger.info(
+                '[+] Source from archived file "%s" loaded!' % filepath)
         else:
             content = None
             for mod_type in paths.keys():
                 filepath = paths[mod_type]
                 try:
-                    logger.debug("[*] Trying '%s' for module/package %s" % (filepath,fullname))
+                    logger.debug(
+                        "[*] Trying '%s' for module/package %s" % (filepath, fullname))
                     content = urlopen(filepath).read()
                     break
                 except IOError:
-                    logger.info("[-] '%s' is not a %s" % (fullname,mod_type))
+                    logger.info("[-] '%s' is not a %s" % (fullname, mod_type))
 
             if content is None:
-                raise ValueError("Module '%s' not found in URL '%s'" % (fullname,self.base_url))
+                raise ValueError("Module '%s' not found in URL '%s'" %
+                                 (fullname, self.base_url))
 
             src = content
             logger.info("[+] Source loaded from URL '%s'!'" % filepath)
@@ -276,6 +289,7 @@ def _open_archive_file(archive_obj, filepath, mode='r', zip_pwd=None):
 
     raise ValueError("Object is not a ZIP or TAR archive")
 
+
 def _list_archive(archive_obj):
     if isinstance(archive_obj, tarfile.TarFile):
         return archive_obj.getnames()
@@ -284,12 +298,14 @@ def _list_archive(archive_obj):
 
     raise ValueError("Object is not a ZIP or TAR archive")
 
+
 def _detect_filetype(base_url):
     try:
-        resp_obj = urlopen(base_url);
+        resp_obj = urlopen(base_url)
         resp = resp_obj.read()
         if "text" in resp_obj.headers['Content-Type']:
-            logger.info("[+] Response of '%s' is HTML. - Content-Type: %s" % (base_url, resp_obj.headers['Content-Type']))
+            logger.info("[+] Response of '%s' is HTML. - Content-Type: %s" %
+                        (base_url, resp_obj.headers['Content-Type']))
             return HttpImporter.WEB_ARCHIVE, resp
 
     except Exception as e:   # Base URL is not callable in GitHub /raw/ contents - returns 400 Error
@@ -326,7 +342,7 @@ The parameters are the same as the HttpImporter class contructor.
         yield
     except ImportError as e:
         raise e
-    finally:    # Always remove the added HttpImporter from sys.meta_path 
+    finally:    # Always remove the added HttpImporter from sys.meta_path
         remove_remote_repo(base_url)
 
 
@@ -347,7 +363,8 @@ Function that removes from the 'sys.meta_path' an HttpImporter object given its 
     '''
     for importer in sys.meta_path:
         try:
-            if importer.base_url.startswith(base_url):  # an extra '/' is always added
+            # an extra '/' is always added
+            if importer.base_url.startswith(base_url):
                 sys.meta_path.remove(importer)
                 return True
         except AttributeError as e:
@@ -362,12 +379,14 @@ Creates the HTTPS URL that points to the raw contents of a github repository.
     github_raw_url = 'https://raw.githubusercontent.com/{user}/{repo}/{branch}/'
     return github_raw_url.format(user=username, repo=repo, branch=branch)
 
+
 def __create_bitbucket_url(username, repo, branch='master'):
     '''
 Creates the HTTPS URL that points to the raw contents of a bitbucket repository.
     '''
     bitbucket_raw_url = 'https://bitbucket.org/{user}/{repo}/raw/{branch}/'
     return bitbucket_raw_url.format(user=username, repo=repo, branch=branch)
+
 
 def __create_gitlab_url(username, repo, branch='master', domain='gitlab.com'):
     '''
@@ -416,12 +435,12 @@ Context Manager that provides import functionality from Github repositories thro
 The parameters are the same as the '_add_git_repo' function. No 'url_builder' function is needed.
     '''
     importer = _add_git_repo(__create_github_url,
-        username, repo, module=module, branch=branch, commit=commit)
+                             username, repo, module=module, branch=branch, commit=commit)
     try:
         yield
     except ImportError as e:
         raise e
-    finally:    # Always remove the added HttpImporter from sys.meta_path 
+    finally:    # Always remove the added HttpImporter from sys.meta_path
         remove_remote_repo(importer.base_url)
 
 
@@ -432,12 +451,12 @@ Context Manager that provides import functionality from BitBucket repositories t
 The parameters are the same as the '_add_git_repo' function. No 'url_builder' function is needed.
     '''
     importer = _add_git_repo(__create_bitbucket_url,
-        username, repo, module=module, branch=branch, commit=commit)
+                             username, repo, module=module, branch=branch, commit=commit)
     try:
         yield
     except ImportError as e:
         raise e
-    finally:    # Always remove the added HttpImporter from sys.meta_path 
+    finally:    # Always remove the added HttpImporter from sys.meta_path
         remove_remote_repo(importer.base_url)
 
 
@@ -448,16 +467,16 @@ Context Manager that provides import functionality from Github repositories thro
 The parameters are the same as the '_add_git_repo' function. No 'url_builder' function is needed.
     '''
     importer = _add_git_repo(__create_gitlab_url,
-        username, repo, module=module, branch=branch, commit=commit, domain=domain)
+                             username, repo, module=module, branch=branch, commit=commit, domain=domain)
     try:
         yield
-    except ImportError as e:    
+    except ImportError as e:
         raise e
-    finally:    # Always remove the added HttpImporter from sys.meta_path 
+    finally:    # Always remove the added HttpImporter from sys.meta_path
         remove_remote_repo(importer.base_url)
 
 
-def load(module_name, url = 'http://localhost:8000/', zip_pwd=None):
+def load(module_name, url='http://localhost:8000/', zip_pwd=None):
     '''
 Loads a module on demand and returns it as a module object. Does NOT load it to the Namespace.
 Example:
@@ -469,11 +488,12 @@ Example:
     '''
     importer = HttpImporter(url, zip_pwd=zip_pwd)
     loader = importer.find_module(module_name)
-    if loader != None :
+    if loader != None:
         module = loader.load_module(module_name)
-        if module :
+        if module:
             return module
-    raise ImportError("Module '%s' cannot be imported from URL: '%s'" % (module_name, url) )
+    raise ImportError(
+        "Module '%s' cannot be imported from URL: '%s'" % (module_name, url))
 
 
 __all__ = [
