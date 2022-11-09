@@ -42,6 +42,12 @@ class Test(unittest.TestCase):
             import test_package
         self.assertTrue(test_package)
 
+    def test_simple_HTTP_pre_0_9_0(self):
+        httpimport.INSECURE = True
+        with httpimport.remote_repo("test_package", base_url='http://localhost:%d/' % self.PORT):
+            import test_package
+        self.assertTrue(test_package)
+
     def test_dependent_HTTP(self):
         httpimport.INSECURE = True
         with httpimport.remote_repo(base_url='http://localhost:%d/' % self.PORT):
