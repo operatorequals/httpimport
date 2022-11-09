@@ -332,11 +332,28 @@ def _detect_filetype(base_url):
 
 @contextmanager
 # Default 'python -m SimpleHTTPServer' URL
-def remote_repo(base_url='http://localhost:8000/', zip_pwd=None):
+def remote_repo(*args, **kwargs):
     '''
 Context Manager that provides remote import functionality through a URL.
 The parameters are the same as the HttpImporter class contructor.
     '''
+    # Backward compatibility hack:
+    # both
+    # 'remote_repo("https://example.com")' (>=v0.9.0) and
+    # 'remote_repo("test_package", base_url=https://example.com")' (<=v0.7.2)
+    # should work both for Python2 and Python3!
+    zip_pwd = kwargs['zip_pwd'] if 'zip_pwd' in kwargs else None
+    base_url = kwargs['base_url'] if 'base_url' in kwargs else 'http://localhost:8000/'
+    if len(args) == 0 and base_url is None:
+        # we have the new >=0.9.0 syntax
+        pass
+    else:
+        for arg in args:
+            # the URL is given as positional
+            if '://' in arg:
+                base_url = arg
+                break
+
     importer = add_remote_repo(base_url, zip_pwd=zip_pwd)
     try:
         yield
@@ -347,11 +364,28 @@ The parameters are the same as the HttpImporter class contructor.
 
 
 # Default 'python -m SimpleHTTPServer' URL
-def add_remote_repo(base_url='http://localhost:8000/', zip_pwd=None):
+def add_remote_repo(*args, **kwargs):
     '''
 Function that creates and adds to the 'sys.meta_path' an HttpImporter object.
 The parameters are the same as the HttpImporter class contructor.
     '''
+    # Backward compatibility hack:
+    # both
+    # 'remote_repo("https://example.com")' (>=v0.9.0) and
+    # 'remote_repo("test_package", base_url=https://example.com")' (<=v0.7.2)
+    # should work both for Python2 and Python3!
+    zip_pwd = kwargs['zip_pwd'] if 'zip_pwd' in kwargs else None
+    base_url = kwargs['base_url'] if 'base_url' in kwargs else 'http://localhost:8000/'
+    if len(args) == 0 and base_url is None:
+        # we have the new >=0.9.0 syntax
+        pass
+    else:
+        for arg in args:
+            # the URL is given as positional
+            if '://' in arg:
+                base_url = arg
+                break
+
     importer = HttpImporter(base_url, zip_pwd=zip_pwd)
     sys.meta_path.insert(0, importer)
     return importer
