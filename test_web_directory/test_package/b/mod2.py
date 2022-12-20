@@ -1,1 +1,1 @@
-mod2val = "Module b"
+mod2val = "Module B"
