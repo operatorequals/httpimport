@@ -221,12 +221,16 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         if module_type == 'package':
             mod.__package__ = name
         else:
+            #check if this could be a nested package
+            if len(name.split('.')[:-1]) > 1:
             #recursively find the package
-            pkg_name = '.'.join(name.split('.')[:-1])
-            while sys.modules[pkg_name].__package__ != pkg_name:
-                pkg_name = '.'.join(pkg_name.split('.')[:-1])
-            mod.__package__ = pkg_name
-
+                pkg_name = '.'.join(name.split('.')[:-1])
+                while sys.modules[pkg_name].__package__ != pkg_name:
+                    pkg_name = '.'.join(pkg_name.split('.')[:-1])
+                mod.__package__ = pkg_name
+            #if this could not be nested, we just use it's own name
+            else:
+                mod.__package__ = name.split('.')[0]
         try:
             mod.__path__ = ['/'.join(mod.__file__.split('/')[:-1]) + '/']
         except:
