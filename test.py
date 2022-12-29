@@ -53,10 +53,6 @@ class Test(unittest.TestCase):
         with httpimport.remote_repo("test_package", base_url='http://localhost:%d/' % self.PORT):
             import test_package
         self.assertTrue(test_package)
-        #subpackage with local imports
-        with httpimport.remote_repo("test_package", base_url='http://localhost:%d/' % self.PORT):
-            import test_package.b
-        self.assertTrue(test_package.b.mod.module_name() == test_package.b.mod2.mod2val)
 
     def test_dependent_HTTP(self):
         httpimport.INSECURE = True
