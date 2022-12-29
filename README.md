@@ -7,7 +7,6 @@ _Remote_, _in-memory_ Python _package/module_ `import`ing **through HTTP/S**
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/httpimport)
 [![PyPI version](https://badge.fury.io/py/httpimport.svg)](https://pypi.python.org/pypi/httpimport)
 [![Python package](https://github.com/operatorequals/httpimport/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/operatorequals/httpimport/actions/workflows/python-package.yml)
-![Coverage Badge](https://raw.githubusercontent.com/operatorequals/httpimport/tests/coverage.svg?sanitize=true)
 
 ![CPython 2.7](https://img.shields.io/badge/Works%20on-CPython%202.7-green)
 ![CPython 3.4](https://img.shields.io/badge/Works%20on-CPython%203.4-brightgreen)
@@ -69,7 +68,7 @@ Load Python packages from archives served through HTTP/S
 >>> # with httpimport.remote_repo('http://example.com/packages.tar.bz2'):
 >>> # with httpimport.remote_repo('http://example.com/packages.tar.gz'):
 >>> # with httpimport.remote_repo('http://example.com/packages.tar.xz'): <-- Python3 Only
->>> with httpimport.remote_repo(['http://example.com/packages.zip'):
+>>> with httpimport.remote_repo('http://example.com/packages.zip'):
 ... 	import test_package
 ...
 >>>
@@ -370,3 +369,4 @@ $ curl https://raw.githubusercontent.com/operatorequals/httpimport/0.7.1/httpimp
 * [lavvy](https://github.com/lavvy) - the `load()` function
 * [superloach](https://github.com/superloach) - Deprecation of `imp` module in Python3 in favour of `importlib`
 * [yanliakos](https://github.com/yanliakos) - Bug Fix
+* [rkbennett](https://github.com/rkbennett) - Relative Imports
