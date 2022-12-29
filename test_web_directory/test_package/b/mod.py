@@ -1,2 +1,4 @@
+from .mod2 import mod2val
+
 def module_name():
-    return 'Module B'
+    return mod2val

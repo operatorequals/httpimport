@@ -117,17 +117,19 @@ It is better to not use this class directly, but through its wrappers ('remote_r
 
     def _mod_to_filepaths(self, fullname, compiled=False):
         suffix = '.pyc' if compiled else '.py'
-        # get the python module name
-        py_filename = fullname.replace(".", os.sep) + suffix
-        # get the filename if it is a package/subpackage
-        py_package = fullname.replace(
-            ".", os.sep, fullname.count(".") - 1) + "/__init__" + suffix
-
         if self.is_archive:
+            # get the python module name
+            py_filename = fullname.replace(".", os.sep) + suffix
+            # get the filename if it is a package/subpackage
+            py_package = fullname.replace(
+                ".", os.sep, fullname.count(".") - 1) + "/__init__" + suffix
             return {'module': py_filename, 'package': py_package}
         else:
             # if self.in_progress:
-            # py_package = fullname.replace(".", '/') + "/__init__" + suffix
+            # get the python module name
+            py_filename = fullname.replace(".", '/') + suffix
+            # get the filename if it is a package/subpackage
+            py_package = fullname.replace(".", '/') + "/__init__" + suffix
             return {
                 'module': self.base_url + py_filename,
                 'package': self.base_url + py_package
@@ -221,8 +223,16 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         if module_type == 'package':
             mod.__package__ = name
         else:
-            mod.__package__ = name.split('.')[0]
-
+            #check if this could be a nested package
+            if len(name.split('.')[:-1]) > 1:
+            #recursively find the package
+                pkg_name = '.'.join(name.split('.')[:-1])
+                while sys.modules[pkg_name].__package__ != pkg_name:
+                    pkg_name = '.'.join(pkg_name.split('.')[:-1])
+                mod.__package__ = pkg_name
+            #if this could not be nested, we just use it's own name
+            else:
+                mod.__package__ = name.split('.')[0]
         try:
             mod.__path__ = ['/'.join(mod.__file__.split('/')[:-1]) + '/']
         except:
