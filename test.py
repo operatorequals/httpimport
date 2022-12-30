@@ -36,6 +36,10 @@ class Test(unittest.TestCase):
             del sys.modules['test_package.a']
         if 'test_package.b' in sys.modules:
             del sys.modules['test_package.b']
+        if 'test_package.b.mod' in sys.modules:
+            del sys.modules['test_package.b.mod']
+        if 'test_package.b.mod2' in sys.modules:
+            del sys.modules['test_package.b.mod2']
         # print(sys.meta_path)
         # print (sys.modules.keys())
 
