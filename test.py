@@ -264,6 +264,7 @@ def _run_webserver():
             try:
                 url_check = urlopen(url)
                 self.send_response(200)
+                self.send_header('Content-Type',url_check.headers['Content-Type'])
                 self.end_headers()
                 self.copyfile(urlopen(url), self.wfile)
             except:
