@@ -52,6 +52,7 @@ log_formatter = logging.Formatter(log_format)
 log_handler.setFormatter(log_formatter)
 logger.addHandler(log_handler)
 
+PROXY = {}
 INSECURE = False
 RELOAD = False
 LEGACY = (sys.version_info.major == 2)
@@ -88,6 +89,22 @@ It is better to not use this class directly, but through its wrappers ('remote_r
         self.in_progress = {}
         self.__zip_pwd = zip_pwd
 
+        #verify PROXY data type:
+        if isinstance(PROXY, dict):
+            #Filter out unusable keys
+            self.PROXY = {proto:PROXY[proto] for proto in ['http', 'https'] if proto in PROXY}
+            if 'http' in self.PROXY or 'https' in self.PROXY:
+                #Let's import the required proxy handler modules
+                try:
+                    from urllib2 import ProxyHandler, build_opener, install_opener
+                except ImportError:
+                    from urllib.request import ProxyHandler, build_opener, install_opener
+                #Apply proxy handler if proxies are defined
+                proxy_handler        = ProxyHandler(self.PROXY)
+                self.proxy_opener    = build_opener(proxy_handler)
+        else:
+            self.PROXY = {}
+
         if not INSECURE and not self.__isHTTPS(base_url):
             logger.warning(
                 "[-] '%s.INSECURE' is not set! Aborting..." % (__name__))
@@ -99,7 +116,10 @@ It is better to not use this class directly, but through its wrappers ('remote_r
                 "[!] Using non HTTPS URLs ('%s') can be a security hazard!" % self.base_url)
 
         try:
-            self.filetype, self.archive = _detect_filetype(base_url)
+            if self.PROXY:
+                self.filetype, self.archive = _detect_filetype(base_url, self.proxy_opener)
+            else:
+                self.filetype, self.archive = _detect_filetype(base_url)
             logger.info("[+] Filetype detected '%s' for '%s'" %
                         (self.filetype, self.base_url))
         except IOError:
@@ -272,7 +292,10 @@ It is better to not use this class directly, but through its wrappers ('remote_r
                 try:
                     logger.debug(
                         "[*] Trying '%s' for module/package %s" % (filepath, fullname))
-                    content = urlopen(filepath).read()
+                    if self.PROXY:
+                        content = self.proxy_opener.open(filepath).read()
+                    else:
+                        content = urlopen(filepath).read()
                     break
                 except IOError:
                     logger.info("[-] '%s' is not a %s" % (fullname, mod_type))
@@ -309,9 +332,12 @@ def _list_archive(archive_obj):
     raise ValueError("Object is not a ZIP or TAR archive")
 
 
-def _detect_filetype(base_url):
+def _detect_filetype(base_url, proxy_opener=None):
     try:
-        resp_obj = urlopen(base_url)
+        if proxy_opener:
+            resp_obj = proxy_opener.open(base_url)
+        else:
+            resp_obj = urlopen(base_url)
         resp = resp_obj.read()
         if "text" in resp_obj.headers['Content-Type']:
             logger.info("[+] Response of '%s' is HTML. - Content-Type: %s" %

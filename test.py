@@ -1,9 +1,11 @@
 try:
     import SimpleHTTPServer
     import SocketServer
+    from urllib2 import urlopen
 except ImportError:
     import http.server
     import socketserver
+    from urllib.request import urlopen
 
 import sys
 import os
@@ -23,6 +25,7 @@ logging.getLogger('httpimport').setLevel(logging.DEBUG)
 class Test(unittest.TestCase):
 
     PORT = 8000
+    PROXY_PORT = 8080
 
     def tearDown(self):
         if 'dependent_module' in sys.modules:
@@ -193,6 +196,18 @@ class Test(unittest.TestCase):
         # If this point is reached then the module1 is imported succesfully!
         self.assertTrue(pack)
 
+    def test_proxy_simple_HTTP(self):
+        httpimport.INSECURE = True
+        httpimport.PROXY = {'http':'http://localhost:%d' % self.PROXY_PORT}
+#        #base package import
+        with httpimport.remote_repo(base_url='http://localhost:%d/' % self.PORT):
+            import test_package
+        self.assertTrue(test_package)
+        #subpackage with local imports
+        with httpimport.remote_repo(base_url='http://localhost:%d/' % self.PORT):
+            import test_package.b
+        self.assertTrue(test_package.b.mod.module_name() == test_package.b.mod2.mod2val)
+
 
 #  def test_dependent_http(self) :
 #    httpimport.INSECURE = True
@@ -208,9 +223,11 @@ def _run_webserver():
         # python 2
         from SimpleHTTPServer import SimpleHTTPRequestHandler
         from BaseHTTPServer import HTTPServer as BaseHTTPServer
+        from SocketServer import ThreadingTCPServer
     except ImportError:
         # python 3
         from http.server import HTTPServer as BaseHTTPServer, SimpleHTTPRequestHandler
+        from socketserver import ThreadingTCPServer
 
     class HTTPHandler(SimpleHTTPRequestHandler):
         """This handler uses server.base_path instead of always using os.getcwd()"""
@@ -238,6 +255,29 @@ def _run_webserver():
     # ============== Starting the HTTP server
     http_thread.start()
     # ============== Wait until HTTP server is ready
+    sleep(1)
+
+    class HTTPProxy(SimpleHTTPRequestHandler):
+        "Proxy class for testing proxied urlopen()s"
+        def do_GET(self):
+            url = self.path
+            try:
+                url_check = urlopen(url)
+                self.send_response(200)
+                self.end_headers()
+                self.copyfile(urlopen(url), self.wfile)
+            except:
+                self.send_response(404)
+                self.end_headers()
+
+    httpd_proxy = ThreadingTCPServer(('', Test.PROXY_PORT), HTTPProxy)
+    print("Proxy Serving at port %d" % Test.PROXY_PORT)
+    proxy_thread = Thread(target=httpd_proxy.serve_forever, )
+    proxy_thread.daemon = True
+
+    # ============== Starting the HTTP Proxy server
+    proxy_thread.start()
+    # ============== Wait until HTTP Proxy server is ready
     sleep(1)
 
 
