@@ -90,8 +90,8 @@ headers:
         self.assertFalse('test_package' in sys.modules)
         url = URLS['web_dir'] % BASIC_AUTH_PORT
         httpimport.set_profile("""[{url}]
+# Wrong Password
 headers:
-    # Wrong Password
     Authorization: Basic dXNlcm5hbWU6d3JvbmdfcGFzc3dvcmQ=
         """.format(url=url))
         with httpimport.remote_repo(url):
