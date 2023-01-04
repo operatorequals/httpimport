@@ -1,15 +1,13 @@
+import test_servers
+
 try:
-    import SimpleHTTPServer
-    import SocketServer
+    from urllib2 import urlopen, HTTPError
 except ImportError:
-    import http.server
-    import socketserver
+    from urllib.request import urlopen
+    from urllib.error import HTTPError
 
 import sys
 import os
-
-from threading import Thread
-from time import sleep
 
 import httpimport
 
@@ -20,85 +18,123 @@ import logging
 logging.getLogger('httpimport').setLevel(logging.DEBUG)
 
 
+TEST_MODULES = [
+    'test_module',
+    'test_package',
+    'test_package.a',
+    'test_package.b',
+    'test_package.b.mod',
+    'test_package.b.mod2',
+    'dependent_package',
+]
+
+PORT = 8000
+PROXY_PORT = 8080
+BASIC_AUTH_PORT = 8001
+
+URLS = {
+    "web_dir": "http://localhost:%d/",
+    "tar_bz": "http://localhost:%d/test_package.tar.bz2",
+    "tar_corrupt": "http://localhost:%d/test_package.corrupted.tar",
+    "tar_xz": "http://localhost:%d/test_package.tar.xz",
+    "tar_gz": "http://localhost:%d/test_package.tar.gz",
+    "tar": "http://localhost:%d/test_package.tar",
+    "zip": "http://localhost:%d/test_package.zip",
+    "zip_encrypt": "http://localhost:%d/test_package.enc.zip",
+}
+
+BASIC_CONFIG = """
+[{url}]
+
+allow-plaintext: True
+"""
+
+httpimport.INSECURE = True
+
 class Test(unittest.TestCase):
 
-    PORT = 8000
-
     def tearDown(self):
-        if 'dependent_module' in sys.modules:
-            del sys.modules['dependent_module']
-        if 'test_package' in sys.modules:
-            del sys.modules['test_package']
-        if 'test_package.a' in sys.modules:
-            del sys.modules['test_package.a']
-        if 'test_package.b' in sys.modules:
-            del sys.modules['test_package.b']
-        # print(sys.meta_path)
-        # print (sys.modules.keys())
+        # Remove all possibly loaded modules
+        for module in TEST_MODULES:
+            sys.modules.pop(module, None)
+        # Remove the HTTP Proxy EnvVar honoured by urllib[2]
+        os.environ['HTTP_PROXY'] = ''
+        # Get back to defaults
+        httpimport.set_profile(httpimport._DEFAULT_INI_CONFIG)
 
     def test_simple_HTTP(self):
-        httpimport.INSECURE = True
-        #base package import
-        with httpimport.remote_repo(base_url='http://localhost:%d/' % self.PORT):
+        # base package import
+        with httpimport.remote_repo(URLS['web_dir'] % PORT):
             import test_package
         self.assertTrue(test_package)
-        #subpackage with local imports
-        with httpimport.remote_repo(base_url='http://localhost:%d/' % self.PORT):
-            import test_package.b
-        self.assertTrue(test_package.b.mod.module_name() == test_package.b.mod2.mod2val)
 
-    def test_simple_HTTP_pre_0_9_0(self):
-        httpimport.INSECURE = True
-        #base package import
-        with httpimport.remote_repo("test_package", base_url='http://localhost:%d/' % self.PORT):
+        # subpackage with local imports
+        with httpimport.remote_repo(URLS['web_dir'] % PORT):
+            import test_package.b
+        self.assertTrue(test_package.b.mod.module_name()
+                        == test_package.b.mod2.mod2val)
+
+    def test_basic_auth_HTTP(self):
+
+        url = URLS['web_dir'] % BASIC_AUTH_PORT
+        httpimport.set_profile("""[{url}]
+headers:
+    Authorization: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
+        """.format(url=url))
+        with httpimport.remote_repo(url):
             import test_package
         self.assertTrue(test_package)
+
+    def test_basic_auth_HTTP_fail(self):
+
+        self.assertFalse('test_package' in sys.modules)
+        url = URLS['web_dir'] % BASIC_AUTH_PORT
+        httpimport.set_profile("""[{url}]
+headers:
+    # Wrong Password
+    Authorization: Basic dXNlcm5hbWU6d3JvbmdfcGFzc3dvcmQ=
+        """.format(url=url))
+        with httpimport.remote_repo(url):
+            try:
+                import test_package
+            except (ImportError, KeyError) as e:
+                self.assertTrue(e)
 
     def test_dependent_HTTP(self):
-        httpimport.INSECURE = True
-        with httpimport.remote_repo(base_url='http://localhost:%d/' % self.PORT):
-            import dependent_module
-        self.assertTrue(dependent_module)
+
+        with httpimport.remote_repo(URLS['web_dir'] % PORT):
+            import dependent_package
+        self.assertTrue(dependent_package)
 
     def test_simple_HTTP_fail(self):
-        httpimport.INSECURE = True
-        with httpimport.remote_repo(base_url='http://localhost:%d/' % self.PORT):
+
+        with httpimport.remote_repo(URLS['web_dir'] % PORT):
             try:
                 import test_package_nonexistent
             except (ImportError, KeyError) as e:
                 self.assertTrue(e)
 
-    def test_zip_import(self):
-        self.assertFalse('test_package' in sys.modules)
-        httpimport.INSECURE = True
-        with httpimport.remote_repo(
-            base_url='http://localhost:%d/test_package.zip' % self.PORT,
-        ):
-            import test_package
-        # If this point is reached then the module1 is imported succesfully!
-        self.assertTrue('test_package' in sys.modules)
-
     def test_tarbz2_import(self):
         self.assertFalse('test_package' in sys.modules)
-        httpimport.INSECURE = True
+
         with httpimport.remote_repo(
-            base_url='http://localhost:%d/test_package.tar.bz2' % self.PORT,
+            URLS['tar_bz'] % PORT,
         ):
             import test_package
-        # If this point is reached then the module1 is imported succesfully!
+
         self.assertTrue('test_package' in sys.modules)
 
     def test_autodetect_corrupt_file(self):
         self.assertFalse('test_package' in sys.modules)
-        httpimport.INSECURE = True
+
         try:
             with httpimport.remote_repo(
-                base_url='http://localhost:%d/test_package.corrupted.tar' % self.PORT,
+                URLS['tar_corrupt'] % PORT,
             ):
                 import test_package
         except (ImportError, KeyError) as e:
             self.assertTrue(e)
-        # If this point is reached then the module1 is imported succesfully!
+
         self.assertFalse('test_package' in sys.modules)
 
     def test_tarxz_import(self):
@@ -106,141 +142,139 @@ class Test(unittest.TestCase):
         if httpimport.LEGACY:  # Pass the test in Python2, which does not support tar.xz lzma
             self.assertTrue(True)
             return
-        httpimport.INSECURE = True
+
         with httpimport.remote_repo(
-            base_url='http://localhost:%d/test_package.tar.xz' % self.PORT,
+            URLS['tar_xz'] % PORT,
         ):
             import test_package
-        # If this point is reached then the module1 is imported succesfully!
+
         self.assertTrue('test_package' in sys.modules)
 
     def test_targz_import(self):
         self.assertFalse('test_package' in sys.modules)
-        httpimport.INSECURE = True
+
         with httpimport.remote_repo(
-            base_url='http://localhost:%d/test_package.tar.gz' % self.PORT,
+            URLS['tar_gz'] % PORT,
         ):
             import test_package
-        # If this point is reached then the module1 is imported succesfully!
+
         self.assertTrue('test_package' in sys.modules)
 
     def test_tar_import(self):
         self.assertFalse('test_package' in sys.modules)
-        httpimport.INSECURE = True
+
         with httpimport.remote_repo(
-            base_url='http://localhost:%d/test_package.tar' % self.PORT,
+            URLS['tar'] % PORT,
         ):
             import test_package
-        # If this point is reached then the module1 is imported succesfully!
+
+        self.assertTrue('test_package' in sys.modules)
+
+    def test_zip_import(self):
+        self.assertFalse('test_package' in sys.modules)
+        url = URLS['zip'] % PORT
+        httpimport.set_profile("""[{url}]
+zip-password:
+        """.format(url=url))
+        with httpimport.remote_repo(url):
+            import test_package
+
         self.assertTrue('test_package' in sys.modules)
 
     # Correct Password for 'test_package.enc.zip' 'P@ssw0rd!'
     def test_zip_import_w_pwd(self):
         self.assertFalse('test_package' in sys.modules)
-        httpimport.INSECURE = True
-        with httpimport.remote_repo(
-            base_url='http://localhost:%d/test_package.enc.zip' % self.PORT,
-            zip_pwd=b'P@ssw0rd!'  # <--- Correct Password
-        ):
+        url = URLS['zip_encrypt'] % PORT
+        httpimport.set_profile("""[{url}]
+zip-password: P@ssw0rd!
+        """.format(url=url))
+        with httpimport.remote_repo(url):
             import test_package
-        # If this point is reached then the module1 is imported succesfully!
+
         self.assertTrue('test_package' in sys.modules)
 
     # Correct Password for 'test_package.enc.zip' 'P@ssw0rd!'
-    def test_enc_zip_import_w_pwd_wrong(self):
+    def test_zip_import_w_pwd_wrong(self):
         self.assertFalse('test_package' in sys.modules)
-        httpimport.INSECURE = True
+        url = URLS['zip_encrypt'] % PORT
+        httpimport.set_profile("""[{url}]
+# wrong password!
+zip-password: XXXXXXXX
+        """.format(url=url))
         try:
-            with httpimport.remote_repo(
-                base_url='http://localhost:%d/test_package.enc.zip' % self.PORT,
-                zip_pwd=b'XXXXXXXX'  # <--- Wrong Password
-            ):
+            with httpimport.remote_repo(url):
                 import test_package
+
         except RuntimeError:
             pass  # <--- zipfile module fails for wrong password
 
-        # If this point is reached then the module1 is imported succesfully!
         self.assertFalse('test_package' in sys.modules)
 
     def test_github_repo(self):
         print("[+] Importing from GitHub")
-        with httpimport.github_repo('operatorequals', 'httpimport-test', module='test_package', branch='main'):
+        with httpimport.github_repo('operatorequals', 'httpimport-test', ref='main'):
             import test_package
-        # If this point is reached then the module1 is imported succesfully!
+
         self.assertTrue(test_package)
         del sys.modules['test_package']
 
     def test_bitbucket_repo(self):
         print("[+] Importing from BitBucket")
-        with httpimport.bitbucket_repo('operatorequals', 'httpimport-test', module='test_package', branch='main'):
+        with httpimport.bitbucket_repo('operatorequals', 'httpimport-test', ref='main'):
             import test_package
-        # If this point is reached then the module1 is imported succesfully!
+
         self.assertTrue(test_package)
         del sys.modules['test_package']
 
     def test_gitlab_repo(self):
         print("[+] Importing from GitLab")
-        with httpimport.gitlab_repo('operatorequals', 'httpimport-test', module='test_package', branch='main'):
+        with httpimport.gitlab_repo('operatorequals', 'httpimport-test', ref='main'):
             import test_package
-        # If this point is reached then the module1 is imported succesfully!
+
         self.assertTrue(test_package)
         del sys.modules['test_package']
 
     def test_load_http(self):
-        httpimport.INSECURE = True
         pack = httpimport.load(
-            'test_package', 'http://localhost:%d/' % self.PORT)
-        # If this point is reached then the module1 is imported succesfully!
+            'test_package', URLS['web_dir'] % PORT)
+
+        self.assertTrue(pack)
+
+    def test_load_relative_fail(self):
+        try:
+            pack = httpimport.load(
+                'test_package.b', URLS['web_dir'] % PORT)
+        except ImportError:
+            self.assertTrue(True)
+
+    def test_proxy_simple_HTTP(self):
+        url = URLS['web_dir'] % PORT
+        httpimport.set_profile("""[{url}]
+proxy-url: http://127.0.0.1:{port}
+        """.format(url=url, port=PROXY_PORT))
+
+        with httpimport.remote_repo(url):
+            import test_package
+
+        self.assertTrue(test_package)
+
+        with httpimport.remote_repo(URLS['web_dir'] % PORT):
+            import test_package.b
+
+        self.assertTrue(test_package.b.mod.module_name()
+                        == test_package.b.mod2.mod2val)
+
+    def test_dependent_load(self):
+
+        pack = httpimport.load(
+            'dependent_package', URLS['web_dir'] % PORT)
+
         self.assertTrue(pack)
 
 
-#  def test_dependent_http(self) :
-#    httpimport.INSECURE = True
-#    pack = httpimport.load('dependent_module', 'http://localhost:%d/' % self.PORT)
-#    self.assertTrue(pack)  # If this point is reached then the module1 is imported succesfully!
-
-
-# ============== Setting up an HTTP server at 'http://localhost:8001/' in current directory
-def _run_webserver():
-
-    # https://stackoverflow.com/questions/39801718/how-to-run-a-http-server-which-serve-a-specific-path
-    try:
-        # python 2
-        from SimpleHTTPServer import SimpleHTTPRequestHandler
-        from BaseHTTPServer import HTTPServer as BaseHTTPServer
-    except ImportError:
-        # python 3
-        from http.server import HTTPServer as BaseHTTPServer, SimpleHTTPRequestHandler
-
-    class HTTPHandler(SimpleHTTPRequestHandler):
-        """This handler uses server.base_path instead of always using os.getcwd()"""
-
-        def translate_path(self, path):
-            path = SimpleHTTPRequestHandler.translate_path(self, path)
-            relpath = os.path.relpath(path, os.getcwd())
-            fullpath = os.path.join(self.server.base_path, relpath)
-            return fullpath
-
-    class HTTPServer(BaseHTTPServer):
-        """The main server, you pass in base_path which is the path you want to serve requests from"""
-
-        def __init__(self, base_path, server_address, RequestHandlerClass=HTTPHandler):
-            self.base_path = base_path
-            BaseHTTPServer.__init__(self, server_address, RequestHandlerClass)
-
-    web_dir = "test_web_directory"
-    httpd = HTTPServer(web_dir, ("", Test.PORT))
-
-    print("Serving at port %d" % Test.PORT)
-    http_thread = Thread(target=httpd.serve_forever, )
-    http_thread.daemon = True
-
-    # ============== Starting the HTTP server
-    http_thread.start()
-    # ============== Wait until HTTP server is ready
-    sleep(1)
-
-
-_run_webserver()
-# while True:
-#   sleep(1)
+test_servers._run_webservers(
+    web_dir="test_web_directory",
+    http_port=PORT,
+    proxy_port=PROXY_PORT,
+    basic_auth_port=BASIC_AUTH_PORT,
+)
