@@ -121,7 +121,7 @@ def http(url, headers={}, method='GET', proxy=None):
         resp = _urlopen(req)
         try:  # Python2 Approach
             headers = { k.lower(): v for k, v in resp.headers.dict.items() }
-        except KeyError:  # Python3 Approach
+        except AttributeError:  # Python3 Approach
             headers = { k.lower(): v for k, v in resp.getheaders() }
 
         return {'code': resp.code, 'body': resp.read(), 'headers': headers}
