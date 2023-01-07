@@ -125,9 +125,9 @@ def http(url, headers={}, method='GET', proxy=None):
     try:
         resp = _urlopen(req)
         try:  # Python2 Approach
-            headers = { k.lower(): v for k, v in resp.headers.dict.items() }
+            headers = {k.lower(): v for k, v in resp.headers.dict.items()}
         except AttributeError:  # Python3 Approach
-            headers = { k.lower(): v for k, v in resp.getheaders() }
+            headers = {k.lower(): v for k, v in resp.getheaders()}
 
         return {'code': resp.code, 'body': resp.read(), 'headers': headers}
     except HTTPError as he:
@@ -250,18 +250,27 @@ class HttpImporter(object):
         proxy (str): The URL for the HTTP proxy to be used for all requests
     """
 
-    def __init__(self, url, zip_pwd=b'', headers={}, proxy=None, allow_plaintext=False):
+    def __init__(
+            self,
+            url,
+            zip_pwd=b'',
+            headers={},
+            proxy=None,
+            allow_plaintext=False):
         # remove trailing '/' from URL parameter
         self.url = url if not url.endswith('/') else url[:-1]
         self.modules = {}
 
         if not _isHTTPS(url):
-            logger.warning("[-] Using HTTP URLs (%s) with 'httpimport' is a security hazard!" % (url))
+            logger.warning(
+                "[-] Using HTTP URLs (%s) with 'httpimport' is a security hazard!" %
+                (url))
             if not (allow_plaintext or INSECURE):
                 logger.error(""" [*]
 Using plaintext protocols needs to be enabled through 'INSECURE' global or explicitly allowed through 'allow-plaintext'!
                 """)
-                raise ImportError("[-] HTTP used while plaintext is not allowed")
+                raise ImportError(
+                    "[-] HTTP used while plaintext is not allowed")
 
         self.zip_pwd = zip_pwd
         self.headers = headers
@@ -482,8 +491,14 @@ def __extract_profile_options(url=None, profile=None):
     }
 
     # Parse Plaintext Flag
-    allow_plaintext = options['allow-plaintext'].lower() in ['true', 'yes', '1']
-    return {'headers': headers, 'proxy': proxy, 'url': url, 'zip_pwd': zip_pwd, 'allow-plaintext': allow_plaintext}
+    allow_plaintext = options['allow-plaintext'].lower() in ['true',
+                                                             'yes', '1']
+    return {
+        'headers': headers,
+        'proxy': proxy,
+        'url': url,
+        'zip_pwd': zip_pwd,
+        'allow-plaintext': allow_plaintext}
 
 # ====================== Features ======================
 
@@ -513,7 +528,7 @@ def add_remote_repo(url=None, profile=None):
         proxy=options['proxy'],
         zip_pwd=options['zip_pwd'],
         allow_plaintext=options['allow-plaintext'],
-        )
+    )
     sys.meta_path.append(importer)
     return importer
 
@@ -641,7 +656,7 @@ def load(module_name, url=None, profile=None):
         proxy=options['proxy'],
         zip_pwd=options['zip_pwd'],
         allow_plaintext=options['allow-plaintext'],
-        )
+    )
     return importer._create_module(module_name, sys_modules=False)
     raise ImportError(
         "Module '%s' cannot be imported from URL: '%s'" % (module_name, url))
