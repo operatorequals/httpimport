@@ -64,12 +64,12 @@ class Test(unittest.TestCase):
 
     def test_headers(self):
         #use the http method and parse the headers key
-        resp = httpimport.http(urls['web_dir'] % port)
+        resp = httpimport.http(URLS['web_dir'] % PORT)
         self.assertTrue('text' in resp['headers']['content-type'])
 
     def test_simple_HTTP(self):
         # base package import
-        with httpimport.remote_repo(urls['web_dir'] % port):
+        with httpimport.remote_repo(URLS['web_dir'] % PORT):
             import test_package
         self.assertTrue(test_package)
 
