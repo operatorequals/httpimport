@@ -77,7 +77,7 @@ Serving HTTP on 0.0.0.0 port 8000 ...
 >>> with httpimport.remote_repo("http://127.0.0.1:8000"):
 ...   import module
 ...
-Hello httpimport
+Hello httpimport!
 ```
 ## Profiles
 After `v1.0.0` it is possible to set HTTP Authentication, Custom Headers, Proxies and several other things using *URL* and *Named Profiles*!
@@ -148,6 +148,9 @@ httpimport.CONFIG.read('github.ini') # Read profiles from a file
 with httpimport.github_repo('operatorequals','httpimport-private-test', profile='github'):
   import secret_module
 ```
+
+## Default Profiles
+The `httpimport` module automatically loads Profiles found in `$HOME/.httpimport.ini` and under the `$HOME/.httpimport/` directory. Profiles under `$HOME/.httpimport/` override ones found in `$HOME/.httpimport.ini`.
 
 ### Profile Options:
 #### Supported
