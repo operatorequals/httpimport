@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys
+import os
 import logging
 import types
 import io
@@ -68,6 +69,10 @@ headers:
 # tls-key: /tmp/tls.key
 # tls-passphrase:
 """.format(version=__version__, homepage=__github__)
+
+__HOME_DIR = os.path.expanduser('~')
+_DEFAULT_INI_CONFIG_FILENAME = __HOME_DIR + os.sep + ".httpimport.ini"
+_DEFAULT_INI_CONFIG_DIR_NAME = __HOME_DIR + os.sep + ".httpimport"
 
 CONFIG = ConfigParser()
 if LEGACY:
@@ -646,6 +651,27 @@ def load(module_name, url=None, profile=None):
 
 # Load the catch-all configuration
 set_profile(_DEFAULT_INI_CONFIG)
+
+# Try to load the user config file
+try:
+    with open(_DEFAULT_INI_CONFIG_FILENAME) as f:
+        logger.info(
+            "[*] Loading configuration from '%s'" %
+            _DEFAULT_INI_CONFIG_FILENAME)
+        set_profile(f.read())
+except IOError: # Not using FileNotFoundError - Python2 compatibility
+    logger.info("[*] File '%s' not available." % _DEFAULT_INI_CONFIG_FILENAME)
+
+# Try to load the user config directory
+try:
+    for config_file in os.listdir(_DEFAULT_INI_CONFIG_DIR_NAME):
+        with open(config_file) as f:
+            logger.info("[*] Loading configuration from '%s'" % config_file)
+            set_profile(f.read())
+except OSError: # Not using FileNotFoundError - Python2 compatibility
+    logger.info(
+        "[*] Directory '%s' not available." %
+        _DEFAULT_INI_CONFIG_DIR_NAME)
 
 # ====================== Main ======================
 
