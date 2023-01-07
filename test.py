@@ -62,9 +62,14 @@ class Test(unittest.TestCase):
         # Get back to defaults
         httpimport.set_profile(httpimport._DEFAULT_INI_CONFIG)
 
+    def test_headers(self):
+        #use the http method and parse the headers key
+        resp = httpimport.http(urls['web_dir'] % port)
+        self.assertTrue('text' in resp['headers']['content-type'])
+
     def test_simple_HTTP(self):
         # base package import
-        with httpimport.remote_repo(URLS['web_dir'] % PORT):
+        with httpimport.remote_repo(urls['web_dir'] % port):
             import test_package
         self.assertTrue(test_package)
 
