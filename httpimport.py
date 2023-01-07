@@ -120,13 +120,9 @@ def http(url, headers={}, method='GET', proxy=None):
     try:
         resp = _urlopen(req)
         try:  # Python2 Approach
-            headers = {  # Parse Header List to Dict
-                h.split(':', 1)[0].lower(): h.split(':', 1)[1].strip()
-                for h in resp.info().__dict__["headers"]
-            }
-        except KeyError:  # Python3 Approach
-            headers = {k.lower(): v for k, v in resp.info().__dict__[
-                "_headers"]}
+            headers = { k.lower(): v for k, v in resp.headers.dict.items() }
+        except AttributeError:  # Python3 Approach
+            headers = { k.lower(): v for k, v in resp.getheaders() }
 
         return {'code': resp.code, 'body': resp.read(), 'headers': headers}
     except HTTPError as he:
