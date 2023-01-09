@@ -17,6 +17,13 @@ from random import randint
 import logging
 logging.getLogger('httpimport').setLevel(logging.DEBUG)
 
+PYTHON = "cpython"
+if ".NETFramework".lower() in sys.version.lower():
+    PYTHON = "ironpython"
+elif "JDK".lower() in sys.version.lower() or "java" in sys.version.lower():
+    PYTHON = "jython"
+elif "pypy".lower() in sys.version.lower():
+    PYTHON = "pypy"
 
 TEST_MODULES = [
     'test_module',
@@ -65,7 +72,7 @@ class Test(unittest.TestCase):
     def test_headers(self):
         #use the http method and parse the headers key
         resp = httpimport.http(URLS['web_dir'] % PORT)
-        self.assertTrue('text' in resp['headers']['content-type'])
+        self.assertTrue('python' in resp['headers']['server'].lower())
 
     def test_simple_HTTP(self):
         # base package import
@@ -144,7 +151,8 @@ headers:
 
     def test_tarxz_import(self):
         self.assertFalse('test_package' in sys.modules)
-        if httpimport.LEGACY:  # Pass the test in Python2, which does not support tar.xz lzma
+        # Pass the test in Python2 and IronPython, which do not support tar.xz lzma
+        if httpimport.LEGACY or PYTHON == "ironpython":
             self.assertTrue(True)
             return
 
