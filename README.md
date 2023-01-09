@@ -8,14 +8,12 @@ _Remote_, _in-memory_ Python _package/module_ `import`ing **through HTTP/S**
 [![PyPI version](https://badge.fury.io/py/httpimport.svg)](https://pypi.python.org/pypi/httpimport)
 [![Python package](https://github.com/operatorequals/httpimport/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/operatorequals/httpimport/actions/workflows/python-package.yml)
 
-![CPython 2.7](https://img.shields.io/badge/Works%20on-CPython%202.7-green)
-![CPython 3.4](https://img.shields.io/badge/Works%20on-CPython%203.4-brightgreen)
-![CPython 3.7](https://img.shields.io/badge/Works%20on-CPython%203.7-brightgreen)
-![CPython 3.9](https://img.shields.io/badge/Works%20on-CPython%203.9-brightgreen)
-![CPython 3.11](https://img.shields.io/badge/Works%20on-CPython%203.11-brightgreen)
+![CPython 2](https://img.shields.io/badge/Works%20on-CPython%202-green)
+![CPython 3](https://img.shields.io/badge/Works%20on-CPython%203-brightgreen)
 ![Pypy 2.7](https://img.shields.io/badge/Works%20on-Pypy%202.7-yellowgreen)
 ![Pypy 3.6](https://img.shields.io/badge/Works%20on-Pypy%203.6-yellowgreen)
 ![Jython 2.7.1](https://img.shields.io/badge/Works%20on-Jython%202.7.1-orange)
+![IronPython 3.4.0](https://img.shields.io/badge/Works%20on-IronPython%203.4.0-lightgrey)
 
 A feature that _Python2/3_ **misses** and has become popular in other languages is the **remote loading of packages/modules**.
 
