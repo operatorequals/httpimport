@@ -343,12 +343,12 @@ Using plaintext protocols needs to be enabled through 'INSECURE' global or expli
         # method (yet)
         if fullname not in self.modules:
             logger.debug(
-                "[*] Module '%s' has not been attempted before. Trying to load...")
+                "[*] Module '%s' has not been attempted before. Trying to load..." % fullname)
             # Run 'find_module' and see if it is loadable through this Importer
             # object
             if self.find_module(fullname) is not self:
                 logger.info(
-                    "[-] Module '%s' has not been found as loadable. Failing...")
+                    "[-] Module '%s' has not been found as loadable. Failing..." % fullname)
                 # If it is not loadable ('find_module' did not return 'self' but 'None'):
                 # throw error:
                 raise ImportError(
