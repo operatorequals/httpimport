@@ -250,8 +250,7 @@ class HttpImporter(object):
                 "[-] Using HTTP URLs (%s) with 'httpimport' is a security hazard!" %
                 (url))
             if not (allow_plaintext or INSECURE):
-                logger.error(""" [*]
-Using plaintext protocols needs to be enabled through 'INSECURE' global or explicitly allowed through 'allow-plaintext'!
+                logger.error("""[*] Using plaintext protocols needs to be enabled through 'INSECURE' global or explicitly allowed through 'allow-plaintext'!
                 """)
                 raise ImportError(
                     "[-] HTTP used while plaintext is not allowed")
