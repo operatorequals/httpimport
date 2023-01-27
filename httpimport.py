@@ -124,7 +124,7 @@ def _isHTTPS(url):
     return url.startswith('https://')
 
 
-def _get_url_options(url):
+def _get_options(url):
     if url in CONFIG.sections():
         return dict(CONFIG.items(url))
     else:
@@ -437,7 +437,7 @@ def __create_git_url(service, username=None, repo=None,
 def __extract_profile_options(url=None, profile=None):
     if profile:
         # If there is a profile name set - try it
-        options = _get_url_options(profile)
+        options = _get_options(profile)
         logger.debug("[*] Profile for URL: '%s' -> %s" % (url, options))
         logger.debug(
             "[*] Profile '%s' for URL: '%s' -> %s" %
@@ -445,7 +445,7 @@ def __extract_profile_options(url=None, profile=None):
         if url is None:
             url = options['url']
     else:
-        options = _get_url_options(url)
+        options = _get_options(url)
         logger.debug("[*] Profile for URL: '%s' -> %s" % (url, options))
 
     proxy = options['proxy-url']
