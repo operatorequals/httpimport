@@ -36,6 +36,9 @@ TEST_MODULES = [
     'test_package.b.mod',
     'test_package.b.mod2',
     'dependent_package',
+
+    'sample',  # PyPI project: https://pypi.org/project/sampleproject
+    'distlib',  # PyPI project: https://pypi.org/project/distlib
 ]
 
 # URLs that provide test data
@@ -50,10 +53,10 @@ URLS = {
     "zip_encrypt": "http://localhost:%d/test_package.enc.zip",
 }
 
-# Base class to expose setUp, tearDown methods
-
 
 class HttpImportTest(unittest.TestCase):
+    # Base class to expose setUp, tearDown methods
+
     def tearDown(self):
         # Remove all possibly loaded modules
         for module in TEST_MODULES:
