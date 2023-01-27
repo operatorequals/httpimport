@@ -7,10 +7,19 @@ from time import sleep
 from urllib.error import HTTPError
 from urllib.request import urlopen
 
-RUNNING = False
+from tests import (
+    SERVER_HOST,
+    BASIC_AUTH_CREDS,
+    BASIC_AUTH_PORT,
+    BASIC_AUTH_PROXY_PORT,
+    HTTP_PORT,
+    PROXY_PORT,
+    WEB_DIRECTORY)
 
 # Taken from:
 # https://stackoverflow.com/questions/39801718/how-to-run-a-http-server-which-serve-a-specific-path
+
+
 class HTTPHandler(SimpleHTTPRequestHandler):
     """This handler uses server.base_path instead of always using os.getcwd()"""
 
@@ -22,6 +31,8 @@ class HTTPHandler(SimpleHTTPRequestHandler):
 
 # Taken from:
 # https://github.com/operatorequals/httpimport/pull/42
+
+
 class ProxyHandler(SimpleHTTPRequestHandler):
     def do_GET(self, head=False):
         try:
@@ -39,8 +50,31 @@ class ProxyHandler(SimpleHTTPRequestHandler):
 
 # Taken from:
 # https://gist.github.com/mauler/593caee043f5fe4623732b4db5145a82
+
+
 class HTTPBasicAuthHandler(HTTPHandler):
-    _auth = 'dXNlcm5hbWU6cGFzc3dvcmQ='  # username:password
+    _auth = BASIC_AUTH_CREDS
+
+    def do_AUTHHEAD(self):
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="HttpImport Test"')
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+
+    def do_GET(self, onauth=HTTPHandler.do_GET):
+        """ Present frontpage with user authentication. """
+        if self.headers.get("Authorization") is None:
+            self.do_AUTHHEAD()
+            self.wfile.write(b"no auth header received")
+        elif self.headers.get("Authorization") == "Basic " + self._auth:
+            onauth(self)
+        else:
+            self.do_AUTHHEAD()
+            self.wfile.write(b"not authenticated")
+
+
+class HTTPBasicAuthProxyHandler(HTTPBasicAuthHandler):
+    _auth = BASIC_AUTH_CREDS
 
     def do_AUTHHEAD(self):
         self.send_response(401)
@@ -49,15 +83,8 @@ class HTTPBasicAuthHandler(HTTPHandler):
         self.end_headers()
 
     def do_GET(self):
-        """ Present frontpage with user authentication. """
-        if self.headers.get("Authorization") is None:
-            self.do_AUTHHEAD()
-            self.wfile.write(b"no auth header received")
-        elif self.headers.get("Authorization") == "Basic " + self._auth:
-            HTTPHandler.do_GET(self)
-        else:
-            self.do_AUTHHEAD()
-            self.wfile.write(b"not authenticated")
+        """ Do HTTP Proxy on Auth Success. """
+        HTTPBasicAuthHandler.do_GET(self, onauth=ProxyHandler.do_GET)
 
 
 class HTTPServer(BaseHTTPServer):
@@ -67,30 +94,59 @@ class HTTPServer(BaseHTTPServer):
         self.port = server_address[1]
         BaseHTTPServer.__init__(self, server_address, RequestHandlerClass)
 
-########### ###########
+########### Globals ###########
 
 
-def _run_webservers(
-    web_dir="test_web_directory",
-    http_port=8000,
-    proxy_port=8080,
-    basic_auth_port=8001,
-):
-    global RUNNING
+__SERVERS = {
+    'httpd': HTTPServer(
+        WEB_DIRECTORY,
+        (SERVER_HOST,
+         HTTP_PORT),
+        RequestHandlerClass=HTTPHandler),
+    'httpd_proxy': HTTPServer(
+        WEB_DIRECTORY,
+        (SERVER_HOST,
+         PROXY_PORT),
+        RequestHandlerClass=ProxyHandler),
+    'httpd_basic_auth': HTTPServer(
+        WEB_DIRECTORY,
+        (SERVER_HOST,
+         BASIC_AUTH_PORT),
+        RequestHandlerClass=HTTPBasicAuthHandler),
+    'httpd_basic_auth_proxy': HTTPServer(
+        WEB_DIRECTORY,
+        (SERVER_HOST,
+         BASIC_AUTH_PROXY_PORT),
+        RequestHandlerClass=HTTPBasicAuthProxyHandler),
+}
 
-    servers = {
-        'httpd': HTTPServer(web_dir, ("", http_port), RequestHandlerClass=HTTPHandler),
-        'httpd_proxy': HTTPServer(web_dir, ("", proxy_port), RequestHandlerClass=ProxyHandler),
-        'httpd_basic_auth': HTTPServer(web_dir, ("", basic_auth_port), RequestHandlerClass=HTTPBasicAuthHandler),
-    }
-    threads = {}
+__SERVER_THREADS = {}
 
-    for name, server in servers.items():
-        print("'%s' at port %d" % (name, server.port))
-        threads[name] = Thread(target=server.serve_forever, )
-        threads[name].daemon = True
-        threads[name].start()
+RUNNING = {
+    'httpd': False,
+    'httpd_proxy': False,
+    'httpd_basic_auth': False,
+    'httpd_basic_auth_proxy': False,
+}
+
+
+def init(server_name=None):
+    global RUNNING, __SERVER_THREADS, __SERVERS
+
+    if RUNNING.get(server_name, False):
+        return
+
+    if server_name is not None:
+        servers = {server_name: __SERVERS[server_name]}
+    else:
+        servers = __SERVERS
+
+    for server_name, server in servers.items():
+        print("'%s' at port %d" % (server_name, server.port))
+        __SERVER_THREADS[server_name] = Thread(target=server.serve_forever, )
+        __SERVER_THREADS[server_name].daemon = True
+        __SERVER_THREADS[server_name].start()
+        RUNNING[server_name] = True
 
     # Wait for everything to hopefully setup
     sleep(1)
-    RUNNING=True
