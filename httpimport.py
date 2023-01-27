@@ -18,7 +18,7 @@ from urllib.request import (ProxyHandler, Request, build_opener,
 # ====================== Metadata ======================
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '1.1.1'
+__version__ = '1.2.0'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 # ====================== Constants ======================
@@ -52,6 +52,18 @@ allow-plaintext: no
 headers:
     X-HttpImport-Version: {version}
     X-HttpImport-Project: {homepage}
+
+# PyPI specific:
+# A multi-line with 'requirements.txt' syntax
+requirements:
+
+# Filepath of a 'requirements.txt' file
+requirements-file:
+
+# A multi-line with (module_name, pypi_project) tuples
+# e.g.:
+#   bs4: beautifulsoup4
+project-names:
 
 ### Not Implemented ###
 # allow-compiled: no
@@ -217,7 +229,53 @@ def _retrieve_compiled(content):  # <== Not Used Yet
 
     raise ValueError("[!] Not possible to unmarshal '.pyc' file")
 
-# ====================== Importer Class ======================
+
+def _create_pypi_url(
+        module_name,
+        version=None,
+        allowed_dists=[
+            'bdist_wheel',
+            'sdist'],
+        pypi_url="https://pypi.org/pypi/%s/json"):
+    """ Returns the URL of a PyPI distribution of a module.
+The Download URL is acquired by directly querying the PyPI API:
+https://warehouse.pypa.io/api-reference/json.html
+    """
+    url = pypi_url % module_name
+    logger.debug("[+] Querying PyPI URL '%s'" % url)
+    try:
+        raw_response = http(url)
+        pypi_response = json.loads(raw_response['body'])
+    except json.decoder.JSONDecodeError:
+        raise ModuleNotFoundError(
+            "PyPI API did not respond with JSON for '%s'. HTTP Status Code: %d" %
+            (module_name, raw_response['code']))
+    if version is None:
+        version = pypi_response['info']['version']
+    if version not in pypi_response['releases']:
+        raise KeyError(
+            "Version '%s' not available for module %s" %
+            version, module_name)
+    release = pypi_response['releases'][version]
+    logger.info(
+        "[+] Version '%s' found for module '%s'" %
+        (version, module_name))
+    for package in release:
+        if 'url' not in package:
+            logger.info(
+                "[-] Version '%s' is an empty release for module '%s'" %
+                version, module_name)
+            continue
+        if package['packagetype'] in allowed_dists:
+            logger.info(
+                "[+] Version '%s' release available in %s" %
+                (version, allowed_dists))
+            return package['url']
+    raise KeyError(
+        "No allowed release type found for %s==%s. Allowed release types: %s" %
+        (module_name, version, allowed_dists))
+
+# ====================== Importer Classes ======================
 
 
 class HttpImporter(object):
@@ -408,6 +466,104 @@ class HttpImporter(object):
         return sys.modules[fullname]
 
 
+class PyPIImporter(object):
+    """ The class that implements the Importer API. Uses the HttpImporter to import PyPI
+releases.
+
+    Args:
+        version_matrix (dict):
+        project_matrix (dict):
+        allowed_dists (list):
+        pypi_url (str):
+        **kw (dict): Parameters that are passed to HttpImporter objects created by this class
+     """
+
+    def __init__(
+            self,
+            url="https://pypi.org/pypi/%s/json",
+            project_matrix={},
+            version_matrix={},
+            allowed_dists=[
+                'bdist_wheel',
+                'sdist'], **kw):
+        if url is None:
+            url = 'https://pypi.org/pypi/%s/json'
+        self.url = url  # Duck Type with HttpImporter
+        self.version_matrix = version_matrix
+        self.project_matrix = project_matrix
+        self.allowed_dists = allowed_dists
+        self.module_importers = {}
+        self.kw = kw
+
+    def find_module(self, module_name, path=None):
+        logger.info(
+            "[*] Trying to find PyPI module '%s', path: '%s'" %
+            (module_name, path))
+        module_root = module_name.split('.')[0]
+        if module_root in self.module_importers:
+            return self.module_importers[module_root]
+
+        version = None
+        # Get the PyPI Project from Module name, if not available use module
+        # root
+        project_name = self.project_matrix.get(module_root, module_root)
+        version_tuple = self.version_matrix.get(project_name, (None, None))
+        # Parse version tuple ('==', '1.0.0')
+        if version_tuple[0] == '==':
+            version = version_tuple[1]
+
+        try:
+            url = _create_pypi_url(
+                project_name,
+                version=version,
+                allowed_dists=self.allowed_dists,
+                pypi_url=self.url)
+            importer = HttpImporter(url, **self.kw)
+            found = importer.find_module(module_name)
+            if found:
+                logger.info(
+                    "[+] Module '%s' can be loaded from PyPI project '%s'. URL: '%s'" %
+                    (module_name, project_name, url))
+                self.module_importers[module_root] = found
+                return found
+
+        except (KeyError, ModuleNotFoundError) as e:
+            logger.warning("[-] %s" % e)
+        # Could not load module from PyPI
+        logger.warning(
+            "[-] Module '%s' cannot be found in PyPI." %
+            module_name)
+        return None
+
+    def _create_module(self, fullname, sys_modules=True):
+        module_root = fullname.split('.')[0]
+        if module_root not in self.module_importers:
+            logger.debug(
+                "[*] Module '%s' has not been attempted before. Trying to find in PyPI..." % fullname)
+            # Run 'find_module' and see if it returns an HttpImporter
+            # object
+            if type(self.find_module(fullname)) != HttpImporter:
+                logger.info(
+                    "[-] Module '%s' has not been found in PyPI. Failing..." % fullname)
+                # If it is not loadable ('find_module' did not return HttpImporter):
+                raise ImportError(
+                    "Module '%s' cannot be loaded from PyPI" %
+                    (fullname))
+        return self.module_importers[module_root]._create_module(fullname, sys_modules)
+
+    def load_module(self, fullname):
+        logger.info(
+            "[*] Loading PyPI module '%s'" %
+            (fullname))
+        try:
+            return self._create_module(fullname)
+        except KeyError:
+            pass
+        logger.warning(
+            "[-] Module '%s' could not be imported from PyPI." %
+            fullname)
+
+
 # ====================== Feature Helpers ======================
 
 
@@ -442,7 +598,8 @@ def __extract_profile_options(url=None, profile=None):
             "[*] Profile '%s' for URL: '%s' -> %s" %
             (profile, url, options))
         if url is None:
-            url = options['url']
+            # if there is no 'url' in there too, could be a PyPI profile
+            url = options.get('url', None)
     else:
         options = _get_options(url)
         logger.debug("[*] Profile for URL: '%s' -> %s" % (url, options))
@@ -460,12 +617,43 @@ def __extract_profile_options(url=None, profile=None):
     # Parse allow-HTTP Flag
     allow_plaintext = options['allow-plaintext'].lower() in ['true',
                                                              'yes', '1']
+    # Get PyPI requirements
+    requirements_file = options['requirements-file']
+    requirements = options['requirements']
+    # Add file requirements to requirement dict
+    if requirements_file:
+        with open(requirements_file) as req_file:
+            requirements += '\n' + req_file.read()
+
+    # Parse requirements
+    version_matrix = {}
+    for line in requirements.splitlines():
+        if not line:
+            continue
+        match = re.match(r'^([\w_-]+)\s*(([=<>]=)\s*(\d+\.\d+\.\d+))?', line)
+        if not match:
+            continue
+
+        if match.group(3, 4):
+            version_matrix[match.group(1)] = (match.group(3, 4))
+        else:
+            version_matrix[match.group(1)] = (match.group(None))
+
+    # Parse header dict from str lines
+    project_matrix = {
+        line.split(':', 1)[0].strip(): line.split(':', 1)[1].strip()
+        for line in options['project-names'].splitlines()
+        if line
+    }
+
     return {
         'headers': headers,
         'proxy': proxy,
         'url': url,
         'zip_pwd': zip_pwd,
         'allow_plaintext': allow_plaintext,
+        'version_matrix': version_matrix,
+        'project_matrix': project_matrix,
     }
 
 # ====================== Features ======================
@@ -630,6 +818,24 @@ def load(module_name, url=None, profile=None, importer_class=HttpImporter):
     raise ImportError(
         "Module '%s' cannot be imported from URL: '%s'" % (module_name, url))
 
+@contextmanager
+def pypi_repo(url='https://pypi.org/pypi/%s/json', profile=None):
+    """ Context Manager that provides remote import functionality from PyPI
+
+    Args:
+        TODO
+    """
+    importer = add_remote_repo(
+        url=url,
+        profile=profile,
+        importer_class=PyPIImporter)
+    url = importer.url
+    try:
+        yield
+    except ImportError as e:
+        raise e
+    finally:  # Always remove the added Importer from sys.meta_path
+        remove_remote_repo(url)
 
 # ====================== Runtime ======================
 
