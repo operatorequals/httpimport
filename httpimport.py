@@ -311,7 +311,7 @@ Using plaintext protocols needs to be enabled through 'INSECURE' global or expli
                         (path))
                     self.modules[fullname] = {}
                     self.modules[fullname]['content'] = content
-                    self.modules[fullname]['filepath'] = path
+                    self.modules[fullname]['filepath'] = self.url + "#" + path
                     self.modules[fullname]['package'] = path.endswith(
                         '__init__.py')
                     return self
