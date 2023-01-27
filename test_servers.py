@@ -1,19 +1,13 @@
 
-try:
-    # python 2
-    from SimpleHTTPServer import SimpleHTTPRequestHandler
-    from BaseHTTPServer import HTTPServer as BaseHTTPServer
-    from urllib2 import urlopen, HTTPError
-except ImportError:
-    # python 3
-    from http.server import HTTPServer as BaseHTTPServer, SimpleHTTPRequestHandler
-    from urllib.request import urlopen
-    from urllib.error import HTTPError
-
+import os
+from http.server import HTTPServer as BaseHTTPServer
+from http.server import SimpleHTTPRequestHandler
 from threading import Thread
 from time import sleep
-import os
+from urllib.error import HTTPError
+from urllib.request import urlopen
 
+RUNNING = False
 
 # Taken from:
 # https://stackoverflow.com/questions/39801718/how-to-run-a-http-server-which-serve-a-specific-path
@@ -82,6 +76,7 @@ def _run_webservers(
     proxy_port=8080,
     basic_auth_port=8001,
 ):
+    global RUNNING
 
     servers = {
         'httpd': HTTPServer(web_dir, ("", http_port), RequestHandlerClass=HTTPHandler),
@@ -98,3 +93,4 @@ def _run_webservers(
 
     # Wait for everything to hopefully setup
     sleep(1)
+    RUNNING=True

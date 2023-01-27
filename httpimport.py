@@ -1,28 +1,24 @@
 #!/usr/bin/env python
-import sys
-import os
-import logging
-import types
 import io
-import tarfile
-import zipfile
+import json
+import logging
 import marshal
+import os
+import re
+import sys
+import tarfile
+import types
+import zipfile
 from contextlib import contextmanager
-
-LEGACY = (sys.version_info.major == 2)
-if LEGACY:
-    import imp
-    from ConfigParser import ConfigParser, NoSectionError
-    from urllib2 import urlopen, Request, HTTPError, URLError, ProxyHandler, build_opener, install_opener
-else:
-    from configparser import ConfigParser, NoSectionError
-    from urllib.request import urlopen, Request, ProxyHandler, build_opener, install_opener
-    from urllib.error import HTTPError, URLError
+from configparser import ConfigParser, NoSectionError
+from urllib.error import HTTPError, URLError
+from urllib.request import (ProxyHandler, Request, build_opener,
+                            install_opener, urlopen)
 
 # ====================== Metadata ======================
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 # ====================== Constants ======================
@@ -75,10 +71,7 @@ _DEFAULT_INI_CONFIG_FILENAME = __HOME_DIR + os.sep + ".httpimport.ini"
 _DEFAULT_INI_CONFIG_DIR_NAME = __HOME_DIR + os.sep + ".httpimport"
 
 CONFIG = ConfigParser()
-if LEGACY:
-    CONFIG.readfp(io.BytesIO(_DEFAULT_INI_CONFIG))
-else:
-    CONFIG.read_string(_DEFAULT_INI_CONFIG)
+CONFIG.read_string(_DEFAULT_INI_CONFIG)
 
 # ====================== Logging ======================
 
@@ -96,7 +89,7 @@ logger.addHandler(log_handler)
 
 
 def http(url, headers={}, method='GET', proxy=None):
-    """ Wraps Python2/3 HTTP calls and ensures cross-compatibility
+    """ Wraps HTTP/S calls in one place
 
     Args:
         url (str):
@@ -107,12 +100,7 @@ def http(url, headers={}, method='GET', proxy=None):
     Returns:
         dict: A dict containing 'code', 'headers', 'body' of HTTP response
     """
-
-    if LEGACY:
-        req = Request(url, headers=headers)
-        req.get_method = lambda: method.upper()
-    else:
-        req = Request(url, headers=headers, method=method.upper())
+    req = Request(url, headers=headers, method=method.upper())
 
     if proxy:
         scheme = proxy.split(':', 1)[0]
@@ -124,11 +112,7 @@ def http(url, headers={}, method='GET', proxy=None):
 
     try:
         resp = _urlopen(req)
-        try:  # Python2 Approach
-            headers = {k.lower(): v for k, v in resp.headers.dict.items()}
-        except AttributeError:  # Python3 Approach
-            headers = {k.lower(): v for k, v in resp.getheaders()}
-
+        headers = {k.lower(): v for k, v in resp.getheaders()}
         return {'code': resp.code, 'body': resp.read(), 'headers': headers}
     except HTTPError as he:
         return {'code': he.code, 'body': b'', 'headers': {}}
@@ -256,7 +240,7 @@ class HttpImporter(object):
             zip_pwd=b'',
             headers={},
             proxy=None,
-            allow_plaintext=False):
+            allow_plaintext=False, **kw):
         # remove trailing '/' from URL parameter
         self.url = url if not url.endswith('/') else url[:-1]
         self.modules = {}
@@ -374,11 +358,7 @@ Using plaintext protocols needs to be enabled through 'INSECURE' global or expli
         logger.debug(
             "[*] Creating Python Module object for '%s'" % (fullname))
 
-        if LEGACY:
-            mod = imp.new_module(fullname)
-        else:
-            mod = types.ModuleType(fullname)
-
+        mod = types.ModuleType(fullname)
         mod.__loader__ = self
         mod.__file__ = self.modules[fullname]['filepath']
         # Set module path - get filepath and keep only the path until filename
@@ -412,7 +392,6 @@ Using plaintext protocols needs to be enabled through 'INSECURE' global or expli
                 logger.warning(
                     "[-] Module/Package '%s' cannot be imported without adding it to sys.modules. Might contain relative imports." %
                     fullname)
-
         return mod
 
     def load_module(self, fullname):
@@ -426,19 +405,12 @@ Using plaintext protocols needs to be enabled through 'INSECURE' global or expli
 
         """
         logger.info("[*] Loading module '%s' into sys.modules" % fullname)
-
-        if LEGACY:
-            imp.acquire_lock()
-
-        try:
-            mod = self._create_module(fullname)
-            return sys.modules[fullname]
-        finally:
-            if LEGACY:
-                imp.release_lock()
+        mod = self._create_module(fullname)
+        return sys.modules[fullname]
 
 
 # ====================== Feature Helpers ======================
+
 
 def __create_git_url(service, username=None, repo=None,
                      ref='master', domain=None):
@@ -477,11 +449,7 @@ def __extract_profile_options(url=None, profile=None):
         logger.debug("[*] Profile for URL: '%s' -> %s" % (url, options))
 
     proxy = options['proxy-url']
-
-    # Python2/3 Bytes vs Str issue. Start with Python2 way, try Python3
-    zip_pwd = options['zip-password']
-    if not LEGACY:
-        zip_pwd = bytes(options['zip-password'], 'utf8')
+    zip_pwd = bytes(options['zip-password'], 'utf8')
 
     # Parse header dict from str lines
     headers = {
@@ -490,7 +458,7 @@ def __extract_profile_options(url=None, profile=None):
         if line
     }
 
-    # Parse Plaintext Flag
+    # Parse allow-HTTP Flag
     allow_plaintext = options['allow-plaintext'].lower() in ['true',
                                                              'yes', '1']
     return {
@@ -498,20 +466,18 @@ def __extract_profile_options(url=None, profile=None):
         'proxy': proxy,
         'url': url,
         'zip_pwd': zip_pwd,
-        'allow-plaintext': allow_plaintext}
+        'allow_plaintext': allow_plaintext,
+    }
 
 # ====================== Features ======================
 
 
 def set_profile(ini_str):
     global CONFIG
-    if LEGACY:
-        CONFIG.readfp(io.BytesIO(ini_str))
-    else:
-        CONFIG.read_string(ini_str)
+    CONFIG.read_string(ini_str)
 
 
-def add_remote_repo(url=None, profile=None):
+def add_remote_repo(url=None, profile=None, importer_class=HttpImporter):
     """ Creates an HttpImporter object and adds it to the `sys.meta_path`.
 
     Args:
@@ -522,12 +488,14 @@ def add_remote_repo(url=None, profile=None):
       HttpImporter: The `HttpImporter` object added to the `sys.meta_path`
     """
     options = __extract_profile_options(url, profile)
-    importer = HttpImporter(
+    url = options.get('url', url)
+    del options['url']
+    logger.debug(
+        "[*] Adding '%s' (profile: %s) with options: %s " %
+        (importer_class, profile, options))
+    importer = importer_class(
         url,
-        headers=options['headers'],
-        proxy=options['proxy'],
-        zip_pwd=options['zip_pwd'],
-        allow_plaintext=options['allow-plaintext'],
+        **options,
     )
     sys.meta_path.append(importer)
     return importer
@@ -561,7 +529,10 @@ def remote_repo(url=None, profile=None):
     or of an archive (supported: .zip, .tar, .tar.bz, .tar.gz, .tar.xz - Python3 only)
 
     """
-    importer = add_remote_repo(url=url, profile=profile)
+    importer = add_remote_repo(
+        url=url,
+        profile=profile,
+        importer_class=HttpImporter)
     url = importer.url
     try:
         yield
@@ -640,7 +611,7 @@ def gitlab_repo(username=None, repo=None, ref='master',
         remove_remote_repo(url)
 
 
-def load(module_name, url=None, profile=None):
+def load(module_name, url=None, profile=None, importer_class=HttpImporter):
     """ Loads a module on demand and returns it as a module object. Does NOT load it to the Namespace.
   Example:
 
@@ -650,12 +621,11 @@ def load(module_name, url=None, profile=None):
   >>>
     """
     options = __extract_profile_options(url, profile)
-    importer = HttpImporter(
+    url = options.get('url', url)
+    del options['url']
+    importer = importer_class(
         url,
-        headers=options['headers'],
-        proxy=options['proxy'],
-        zip_pwd=options['zip_pwd'],
-        allow_plaintext=options['allow-plaintext'],
+        **options,
     )
     return importer._create_module(module_name, sys_modules=False)
     raise ImportError(
@@ -663,6 +633,7 @@ def load(module_name, url=None, profile=None):
 
 
 # ====================== Runtime ======================
+
 
 # Load the catch-all configuration
 set_profile(_DEFAULT_INI_CONFIG)
@@ -674,7 +645,7 @@ try:
             "[*] Loading configuration from '%s'" %
             _DEFAULT_INI_CONFIG_FILENAME)
         set_profile(f.read())
-except IOError: # Not using FileNotFoundError - Python2 compatibility
+except FileNotFoundError:
     logger.info("[*] File '%s' not available." % _DEFAULT_INI_CONFIG_FILENAME)
 
 # Try to load the user config directory
@@ -683,7 +654,7 @@ try:
         with open(config_file) as f:
             logger.info("[*] Loading configuration from '%s'" % config_file)
             set_profile(f.read())
-except OSError: # Not using FileNotFoundError - Python2 compatibility
+except FileNotFoundError:
     logger.info(
         "[*] Directory '%s' not available." %
         _DEFAULT_INI_CONFIG_DIR_NAME)

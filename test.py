@@ -1,20 +1,14 @@
-import test_servers
-
-try:
-    from urllib2 import urlopen, HTTPError
-except ImportError:
-    from urllib.request import urlopen
-    from urllib.error import HTTPError
-
-import sys
+import logging
 import os
-
-import httpimport
-
+import sys
 import unittest
 from random import randint
+from urllib.error import HTTPError
+from urllib.request import urlopen
 
-import logging
+import httpimport
+import test_servers
+
 logging.getLogger('httpimport').setLevel(logging.DEBUG)
 
 PYTHON = "cpython"
@@ -33,6 +27,7 @@ TEST_MODULES = [
     'test_package.b.mod',
     'test_package.b.mod2',
     'dependent_package',
+
 ]
 
 PORT = 8000
@@ -151,8 +146,8 @@ headers:
 
     def test_tarxz_import(self):
         self.assertFalse('test_package' in sys.modules)
-        # Pass the test in Python2 and IronPython, which do not support tar.xz lzma
-        if httpimport.LEGACY or PYTHON == "ironpython":
+        # Pass the test in IronPython, which does not support tar.xz lzma
+        if PYTHON == "ironpython":
             self.assertTrue(True)
             return
 
@@ -258,7 +253,17 @@ zip-password: XXXXXXXX
             pack = httpimport.load(
                 'test_package.b', URLS['web_dir'] % PORT)
         except ImportError:
+            ''' Fails as 'load()' does not import modules in 'sys.modules'
+            but relative imports rely on them
+            '''
             self.assertTrue(True)
+
+    def test_load_relative_success(self):
+        url = URLS['web_dir'] % PORT
+        with httpimport.remote_repo(url):
+            import test_package.c
+
+        self.assertTrue(test_package.c)
 
     def test_proxy_simple_HTTP(self):
         url = URLS['web_dir'] % PORT
@@ -278,10 +283,8 @@ proxy-url: http://127.0.0.1:{port}
                         == test_package.b.mod2.mod2val)
 
     def test_dependent_load(self):
-
         pack = httpimport.load(
             'dependent_package', URLS['web_dir'] % PORT)
-
         self.assertTrue(pack)
 
 
