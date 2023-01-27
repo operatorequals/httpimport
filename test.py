@@ -27,7 +27,6 @@ TEST_MODULES = [
     'test_package.b.mod',
     'test_package.b.mod2',
     'dependent_package',
-
 ]
 
 PORT = 8000
@@ -286,6 +285,16 @@ proxy-url: http://127.0.0.1:{port}
         pack = httpimport.load(
             'dependent_package', URLS['web_dir'] % PORT)
         self.assertTrue(pack)
+
+    def test_from_keyword(self):
+        url = URLS['web_dir'] % PORT
+        httpimport.set_profile("""[{url}]
+proxy-url: http://127.0.0.1:{port}
+        """.format(url=url, port=PROXY_PORT))
+
+        with httpimport.remote_repo(url):
+            from test_package import a
+        self.assertTrue(a)
 
 
 test_servers._run_webservers(
