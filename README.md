@@ -39,7 +39,9 @@ url = "https://gist.githubusercontent.com/operatorequals/ee5049677e7bbc97af2941d
 
 with httpimport.remote_repo(url):
   import hello
+
 hello.hello()
+# Hello world
 ```
 
 ### Load a package/module from HTTP/S directly to a variable
@@ -58,6 +60,15 @@ module_object
 # with httpimport.remote_repo('https://example.com/packages.tar.xz'): <-- Python3 Only
 with httpimport.remote_repo('https://example.com/packages.zip'):
   import test_package
+```
+
+### Load a module from a PyPI project:
+```python
+with httpimport.pypi_repo():
+  import distlib # https://pypi.org/project/distlib/
+
+print(distlib.__version__)
+# '0.3.6' <-- https://github.com/pypa/distlib/blob/0.3.6/distlib/__init__.py#L9
 ```
 
 ## Serving a package through HTTP/S
@@ -113,6 +124,33 @@ with httpimport.github_repo('operatorequals','httpimport-private-test', profile=
   import secret_module
 ```
 
+### Profiles for PyPI
+When importing from PyPI extra options can be used, as described in the profile below:
+
+```ini
+[pypi]
+
+# The location of a 'requirements.txt' file
+# to use for PyPI project versions
+requirements-file: requirements-dev.txt
+
+# Inline 'requirements.txt' syntax appended
+requirements:
+  distlib==0.3.5
+  sampleproject==3.0.0
+
+# Only version pinning notation is supported ('==')
+# with 'requirements' and 'requirements-file' options
+
+# A map that contains 'module': 'PyPI project' tuples
+# i.e: 'import sample' --> search 'sample' module at 'sampleproject' PyPI Project:
+# https://pypi.org/project/sampleproject/
+project-names:
+  sample: sampleproject
+```
+
+Additionally, all other options cascade to PyPI profiles, such as HTTPS Proxy (HTTP proxies won't work, as PyPI is hosted with HTTPS), `headers`, etc.
+
 ##### Github Tokens look like `github_pat_<gibberish>` and can be issued here: https://github.com/settings/tokens/new
 
 ##### NOTE: The values in Profiles MUST NOT be quoted (`'`,`"`)
@@ -151,10 +189,16 @@ The `httpimport` module automatically loads Profiles found in `$HOME/.httpimport
 
 ### Profile Options:
 #### Supported
+HTTP options
 * `zip-password` - `v1.0.0`
 * `proxy-url` - `v1.0.0`
 * `headers` - `v1.0.0`
 * `allow-plaintext` - `v1.0.0`
+
+PyPI-only options
+* `project-names` - `v1.2.0`
+* `requirements` - `v1.2.0`
+* `requirements-file` - `v1.2.0`
 
 #### Not yet (subject to change)
 * `allow-compiled`
