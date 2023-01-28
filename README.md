@@ -4,6 +4,8 @@
 
 _Remote_, _in-memory_ Python _package/module_ `import`ing **through HTTP/S**
 
+[![Downloads](https://img.shields.io/pypi/dm/httpimport)](https://pypi.org/project/httpimport/)
+
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/httpimport)
 [![PyPI version](https://badge.fury.io/py/httpimport.svg)](https://pypi.python.org/pypi/httpimport)
 [![Python package](https://github.com/operatorequals/httpimport/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/operatorequals/httpimport/actions/workflows/python-package.yml)
@@ -26,6 +28,15 @@ with httpimport.remote_repo('http://my-codes.example.com/python_packages'):
   import package1
 ```
 
+### Load a module from PyPI:
+```python
+with httpimport.pypi_repo():
+  import distlib # https://pypi.org/project/distlib/
+
+print(distlib.__version__)
+# '0.3.6' <-- currently latest (https://github.com/pypa/distlib/blob/0.3.6/distlib/__init__.py#L9)
+```
+
 ### Load directly from a GitHub/BitBucket/GitLab repo
 ```python
 with httpimport.github_repo('operatorequals', 'httpimport', ref='master'):
@@ -44,11 +55,17 @@ hello.hello()
 # Hello world
 ```
 
-### Load a package/module from HTTP/S directly to a variable
+### Load a package/module directly to a variable
 ```python
-module_object = httpimport.load('package1', 'https://my-codes.example.com/python_packages')
-module_object
+# From HTTP/S URL
+http_module = httpimport.load('package1', 'https://my-codes.example.com/python_packages')
+print(http_module)
 <module 'package1' from 'https://my-codes.example.com/python_packages/package1/__init__.py'>
+
+# From PyPI
+pypi_module = httpimport.load('distlib', importer_class=httpimport.PyPIImporter)
+print(pypi_module)
+<module 'distlib' from 'https://files.pythonhosted.org/packages/76/cb/6bbd2b10170ed991cf64e8c8b85e01f2fb38f95d1bc77617569e0b0b26ac/distlib-0.3.6-py2.py3-none-any.whl#distlib/__init__.py'>
 ```
 
 ### Load Python packages from archives served through HTTP/S
@@ -60,15 +77,6 @@ module_object
 # with httpimport.remote_repo('https://example.com/packages.tar.xz'): <-- Python3 Only
 with httpimport.remote_repo('https://example.com/packages.zip'):
   import test_package
-```
-
-### Load a module from a PyPI project:
-```python
-with httpimport.pypi_repo():
-  import distlib # https://pypi.org/project/distlib/
-
-print(distlib.__version__)
-# '0.3.6' <-- https://github.com/pypa/distlib/blob/0.3.6/distlib/__init__.py#L9
 ```
 
 ## Serving a package through HTTP/S
@@ -87,6 +95,7 @@ Serving HTTP on 0.0.0.0 port 8000 ...
 ...
 Hello httpimport!
 ```
+
 ## Profiles
 After `v1.0.0` it is possible to set HTTP Authentication, Custom Headers, Proxies and several other things using *URL* and *Named Profiles*!
 
@@ -149,6 +158,18 @@ project-names:
   sample: sampleproject
 ```
 
+The PyPI Profiles can be used exactly like all *Named Profiles*:
+
+```python
+with httpimport.pypi_repo(profile='pypi'):
+  import distlib
+  import sample
+distlib.__version__
+# '0.3.5' <-- pinned in the profile 'requirements' option
+sample.__url__
+# 'https://files.pythonhosted.org/packages/ec/a8/5ec62d18adde798d33a170e7f72930357aa69a60839194c93eb0fb05e59c/sampleproject-3.0.0-py3-none-any.whl#sample/__init__.py' <-- loaded from 'sampleproject'
+```
+
 Additionally, all other options cascade to PyPI profiles, such as HTTPS Proxy (HTTP proxies won't work, as PyPI is hosted with HTTPS), `headers`, etc.
 
 ##### Github Tokens look like `github_pat_<gibberish>` and can be issued here: https://github.com/settings/tokens/new
@@ -172,7 +193,7 @@ with httpimport.remote_repo("https://code.example.com", profile='profile1'):
 ```
 
 #### Advanced
-Profiles are INI configuration strings parsed using Python's [`configparser`](https://docs.python.org/3/library/configparser.html) (and [`ConfigParser`](https://docs.python.org/2/library/configparser.html) for Python2) module.
+Profiles are INI configuration strings parsed using Python [`configparser`](https://docs.python.org/3/library/configparser.html) module.
 
 The `ConfigParser` object for `httpimport` is the global variable `httpimport.CONFIG` and can be used freely:
 
