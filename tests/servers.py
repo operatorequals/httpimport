@@ -47,6 +47,7 @@ class ProxyHandler(SimpleHTTPRequestHandler):
         except HTTPError as he:
             code = he.code
         self.send_response(code)
+        self.send_header(PROXY_HEADER[0], PROXY_HEADER[1])
         self.end_headers()
         if code == 200 and not head:
             self.copyfile(resp, self.wfile)
