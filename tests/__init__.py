@@ -1,7 +1,10 @@
+import logging
 import sys
 import unittest
 
 import httpimport
+
+httpimport.logger.setLevel(logging.DEBUG)
 
 # Define Interpreter Type
 PYTHON = "cpython"
