@@ -7,12 +7,11 @@ _Remote_, _in-memory_ Python _package/module_ `import`ing **through HTTP/S**
 [![Downloads](https://img.shields.io/pypi/dm/httpimport)](https://pypi.org/project/httpimport/)
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/httpimport)
-[![PyPI version](https://badge.fury.io/py/httpimport.svg)](https://pypi.python.org/pypi/httpimport)
+[![PyPI version](https://badge.fury.io/py/httpimport.svg?cache=1)](https://pypi.python.org/pypi/httpimport)
 [![Python package](https://github.com/operatorequals/httpimport/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/operatorequals/httpimport/actions/workflows/python-package.yml)
 
 ![CPython 3](https://img.shields.io/badge/Works%20on-CPython%203-brightgreen)
-![Pypy 3.6](https://img.shields.io/badge/Works%20on-Pypy%203.6-yellowgreen)
-![IronPython 3.4.0](https://img.shields.io/badge/Works%20on-IronPython%203.4.0-lightgrey)
+![Pypy 3.6](https://img.shields.io/badge/Works%20on-Pypy%203-yellowgreen)
 
 A feature that _Python_ **misses** and has become popular in other languages is the **remote loading of packages/modules**.
 
@@ -215,6 +214,8 @@ HTTP options
 * `proxy-url` - `v1.0.0`
 * `headers` - `v1.0.0`
 * `allow-plaintext` - `v1.0.0`
+* `ca-verify` - `v1.3.0`
+* `ca-file` - `v1.3.0`
 
 PyPI-only options
 * `project-names` - `v1.2.0`
@@ -226,9 +227,6 @@ PyPI-only options
 
 * `auth`
 * `auth-type`
-
-* `ca-verify`
-* `ca-cert`
 
 * `tls-cert`
 * `tls-key`
