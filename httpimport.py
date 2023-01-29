@@ -5,6 +5,7 @@ import logging
 import marshal
 import os
 import re
+import ssl
 import sys
 import tarfile
 import types
@@ -53,6 +54,8 @@ headers:
     X-HttpImport-Version: {version}
     X-HttpImport-Project: {homepage}
 
+ca-verify: yes
+
 # PyPI specific:
 # A multi-line with 'requirements.txt' syntax
 requirements:
@@ -71,7 +74,6 @@ project-names:
 # auth: username:password
 # auth-type: basic
 
-# ca-verify: yes
 # ca-cert: /tmp/ca.crt
 # tls-cert: /tmp/tls.cert
 # tls-key: /tmp/tls.key
@@ -100,7 +102,7 @@ logger.addHandler(log_handler)
 # ====================== HTTP abstraction ======================
 
 
-def http(url, headers={}, method='GET', proxy=None):
+def http(url, headers={}, method='GET', proxy=None, ca_verify=True):
     """ Wraps HTTP/S calls in one place
 
     Args:
@@ -108,6 +110,7 @@ def http(url, headers={}, method='GET', proxy=None):
         headers (dict):
         method (str):
         proxy (str):
+        ca_verify (bool):
 
     Returns:
         dict: A dict containing 'code', 'headers', 'body' of HTTP response
@@ -115,15 +118,12 @@ def http(url, headers={}, method='GET', proxy=None):
     req = Request(url, headers=headers, method=method.upper())
 
     if proxy:
-        scheme = proxy.split(':', 1)[0]
-        proxy_handler = ProxyHandler({scheme: proxy})
-        proxy_opener = build_opener(proxy_handler)
-        _urlopen = proxy_opener.open
-    else:
-        _urlopen = urlopen
+        scheme, host = proxy.split('://', 1)
+        req.set_proxy(host, scheme)
 
     try:
-        resp = _urlopen(req)
+        resp = urlopen(req,
+            context=None if ca_verify else ssl._create_unverified_context())
         headers = {k.lower(): v for k, v in resp.getheaders()}
         return {'code': resp.code, 'body': resp.read(), 'headers': headers}
     except HTTPError as he:
@@ -298,7 +298,8 @@ class HttpImporter(object):
             zip_pwd=b'',
             headers={},
             proxy=None,
-            allow_plaintext=False, **kw):
+            allow_plaintext=False,
+            ca_verify=True, **kw):
         # remove trailing '/' from URL parameter
         self.url = url if not url.endswith('/') else url[:-1]
         self.modules = {}
@@ -313,13 +314,19 @@ class HttpImporter(object):
                 raise ImportError(
                     "[-] HTTP used while plaintext is not allowed")
 
+        if not ca_verify:
+            logger.warning(
+                "[-] Disabling TLS Certificate verification for URL (%s) is a security hazard!" %
+                (url))
+
         self.zip_pwd = zip_pwd
         self.headers = headers
         self.proxy = proxy
+        self.ca_verify = ca_verify
 
         # Try a request that can fail in case of connectivity issues
         resp = http(url, headers=self.headers, proxy=self.proxy,
-                    method='GET')
+                    method='GET', ca_verify=self.ca_verify)
 
         # Try to extract an archive from URL
         self.archive = _retrieve_archive(resp['body'], url)
@@ -343,7 +350,7 @@ class HttpImporter(object):
         for path in paths:
             if self.archive is None:
                 url = self.url + '/' + path
-                resp = http(url, headers=self.headers, proxy=self.proxy)
+                resp = http(url, headers=self.headers, proxy=self.proxy, ca_verify=self.ca_verify)
                 if resp['code'] == 200:
                     logger.debug(
                         "[+] Fetched Python code from '%s'. The module can be loaded!" %
@@ -617,6 +624,8 @@ def __extract_profile_options(url=None, profile=None):
     # Parse allow-HTTP Flag
     allow_plaintext = options['allow-plaintext'].lower() in ['true',
                                                              'yes', '1']
+    ca_verify = options['ca-verify'].lower() in ['true', 'yes', '1']
+
     # Get PyPI requirements
     requirements_file = options['requirements-file']
     requirements = options['requirements']
@@ -654,6 +663,7 @@ def __extract_profile_options(url=None, profile=None):
         'allow_plaintext': allow_plaintext,
         'version_matrix': version_matrix,
         'project_matrix': project_matrix,
+        'ca_verify': ca_verify,
     }
 
 # ====================== Features ======================
