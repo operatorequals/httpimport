@@ -1,7 +1,7 @@
 import urllib
 
 import httpimport
-from tests import HttpImportTest, URLS, HTTP_PORT, PROXY_HEADER, PROXY_PORT, HTTPS_PORT, PROXY_TLS_PORT
+from tests import HttpImportTest, URLS, HTTP_PORT, PROXY_HEADER, PROXY_PORT, HTTPS_PORT, PROXY_TLS_PORT, HTTPS_CERT
 from tests import servers
 
 URL = (URLS['web_dir'] % HTTPS_PORT).replace("http://", "https://")
@@ -41,7 +41,22 @@ ca-verify: false
         except urllib.error.URLError:
             self.assertTrue(True)
 
-    # def test_unverified_https_proxy(self):
-    #     resp = httpimport.http('https://127.0.0.1:%d' % HTTPS_PORT, proxy='https://127.0.0.1:%d' % PROXY_TLS_PORT, ca_verify=False)
-    #     self.assertTrue('python' in resp['headers']['server'].lower())
-        
+    def test_verify_ca(self):
+        httpimport.set_profile("""
+[verify_cert]
+ca-file: {path}
+            """.format(path=HTTPS_CERT))
+        with httpimport.remote_repo(URL, profile='verify_cert'):
+            import test_package
+        self.assertTrue(test_package)
+
+    def test_invalid_ca(self):
+        httpimport.set_profile("""
+[invalid_ca_file]
+ca-file: /non-existent/
+        """)
+        try:
+            with httpimport.remote_repo(URL, profile='invalid_ca_file'):
+                import test_package
+        except FileNotFoundError:
+            self.assertTrue(True)
