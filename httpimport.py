@@ -55,6 +55,7 @@ headers:
     X-HttpImport-Project: {homepage}
 
 ca-verify: yes
+ca-file:
 
 # PyPI specific:
 # A multi-line with 'requirements.txt' syntax
@@ -74,7 +75,6 @@ project-names:
 # auth: username:password
 # auth-type: basic
 
-# ca-cert: /tmp/ca.crt
 # tls-cert: /tmp/tls.cert
 # tls-key: /tmp/tls.key
 # tls-passphrase:
@@ -102,7 +102,7 @@ logger.addHandler(log_handler)
 # ====================== HTTP abstraction ======================
 
 
-def http(url, headers={}, method='GET', proxy=None, ca_verify=True):
+def http(url, headers={}, method='GET', proxy=None, ca_verify=True, ca_file=None):
     """ Wraps HTTP/S calls in one place
 
     Args:
@@ -111,6 +111,7 @@ def http(url, headers={}, method='GET', proxy=None, ca_verify=True):
         method (str):
         proxy (str):
         ca_verify (bool):
+        ca-file (str):
 
     Returns:
         dict: A dict containing 'code', 'headers', 'body' of HTTP response
@@ -123,7 +124,9 @@ def http(url, headers={}, method='GET', proxy=None, ca_verify=True):
 
     try:
         resp = urlopen(req,
-            context=None if ca_verify else ssl._create_unverified_context())
+            context=ssl.create_default_context(cafile=ca_file)
+                if ca_verify else ssl._create_unverified_context()
+                )
         headers = {k.lower(): v for k, v in resp.getheaders()}
         return {'code': resp.code, 'body': resp.read(), 'headers': headers}
     except HTTPError as he:
@@ -299,7 +302,7 @@ class HttpImporter(object):
             headers={},
             proxy=None,
             allow_plaintext=False,
-            ca_verify=True, **kw):
+            ca_verify=True, ca_file=None, **kw):
         # remove trailing '/' from URL parameter
         self.url = url if not url.endswith('/') else url[:-1]
         self.modules = {}
@@ -323,10 +326,11 @@ class HttpImporter(object):
         self.headers = headers
         self.proxy = proxy
         self.ca_verify = ca_verify
+        self.ca_file = ca_file
 
         # Try a request that can fail in case of connectivity issues
         resp = http(url, headers=self.headers, proxy=self.proxy,
-                    method='GET', ca_verify=self.ca_verify)
+                    method='GET', ca_verify=self.ca_verify, ca_file=self.ca_file)
 
         # Try to extract an archive from URL
         self.archive = _retrieve_archive(resp['body'], url)
@@ -350,7 +354,7 @@ class HttpImporter(object):
         for path in paths:
             if self.archive is None:
                 url = self.url + '/' + path
-                resp = http(url, headers=self.headers, proxy=self.proxy, ca_verify=self.ca_verify)
+                resp = http(url, headers=self.headers, proxy=self.proxy, ca_verify=self.ca_verify, ca_file=self.ca_file)
                 if resp['code'] == 200:
                     logger.debug(
                         "[+] Fetched Python code from '%s'. The module can be loaded!" %
@@ -626,6 +630,8 @@ def __extract_profile_options(url=None, profile=None):
                                                              'yes', '1']
     ca_verify = options['ca-verify'].lower() in ['true', 'yes', '1']
 
+    ca_file = None if not options['ca-file'] else options['ca-file']
+
     # Get PyPI requirements
     requirements_file = options['requirements-file']
     requirements = options['requirements']
@@ -664,6 +670,7 @@ def __extract_profile_options(url=None, profile=None):
         'version_matrix': version_matrix,
         'project_matrix': project_matrix,
         'ca_verify': ca_verify,
+        'ca_file': ca_file
     }
 
 # ====================== Features ======================
