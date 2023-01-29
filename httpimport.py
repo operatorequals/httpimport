@@ -19,7 +19,7 @@ from urllib.request import (ProxyHandler, Request, build_opener,
 # ====================== Metadata ======================
 
 __author__ = 'John Torakis - operatorequals'
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 __github__ = 'https://github.com/operatorequals/httpimport'
 
 # ====================== Constants ======================
