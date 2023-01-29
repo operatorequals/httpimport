@@ -2,6 +2,7 @@
 import os
 from http.server import HTTPServer as BaseHTTPServer
 from http.server import SimpleHTTPRequestHandler
+import ssl
 from threading import Thread
 from time import sleep
 from urllib.error import HTTPError
@@ -13,7 +14,12 @@ from tests import (
     BASIC_AUTH_PORT,
     BASIC_AUTH_PROXY_PORT,
     HTTP_PORT,
+    HTTPS_PORT,
     PROXY_PORT,
+    PROXY_TLS_PORT,
+    HTTPS_CERT,
+    PROXY_TLS_CERT,
+    PROXY_HEADER,
     WEB_DIRECTORY)
 
 # Taken from:
@@ -118,8 +124,20 @@ __SERVERS = {
         (SERVER_HOST,
          BASIC_AUTH_PROXY_PORT),
         RequestHandlerClass=HTTPBasicAuthProxyHandler),
+    'httpd_tls': HTTPServer(
+        WEB_DIRECTORY,
+        (SERVER_HOST,
+         HTTPS_PORT),
+        RequestHandlerClass=HTTPHandler),
+    'httpd_proxy_tls': HTTPServer(
+        WEB_DIRECTORY,
+        (SERVER_HOST,
+         PROXY_TLS_PORT),
+        RequestHandlerClass=ProxyHandler),
 }
 
+__SERVERS['httpd_tls'].socket = ssl.wrap_socket (__SERVERS['httpd_tls'].socket, certfile=HTTPS_CERT, server_side=True)
+__SERVERS['httpd_proxy_tls'].socket = ssl.wrap_socket (__SERVERS['httpd_proxy_tls'].socket, certfile=PROXY_TLS_CERT, server_side=True)
 __SERVER_THREADS = {}
 
 RUNNING = {
@@ -127,6 +145,8 @@ RUNNING = {
     'httpd_proxy': False,
     'httpd_basic_auth': False,
     'httpd_basic_auth_proxy': False,
+    'httpd_tls': False,
+    'httpd_proxy_tls': False,
 }
 
 
