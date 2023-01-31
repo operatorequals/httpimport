@@ -73,7 +73,7 @@ print(pypi_module)
 # with httpimport.remote_repo('https://example.com/packages.tar'):
 # with httpimport.remote_repo('https://example.com/packages.tar.bz2'):
 # with httpimport.remote_repo('https://example.com/packages.tar.gz'):
-# with httpimport.remote_repo('https://example.com/packages.tar.xz'): <-- Python3 Only
+# with httpimport.remote_repo('https://example.com/packages.tar.xz'):
 with httpimport.remote_repo('https://example.com/packages.zip'):
   import test_package
 ```
@@ -132,6 +132,8 @@ with httpimport.github_repo('operatorequals','httpimport-private-test', profile=
   import secret_module
 ```
 
+##### Github Tokens look like `github_pat_<gibberish>` and can be issued here: https://github.com/settings/tokens/new
+
 ### Profiles for PyPI
 When importing from PyPI extra options can be used, as described in the profile below:
 
@@ -170,8 +172,6 @@ sample.__url__
 ```
 
 Additionally, all other options cascade to PyPI profiles, such as HTTPS Proxy (HTTP proxies won't work, as PyPI is hosted with HTTPS), `headers`, etc.
-
-##### Github Tokens look like `github_pat_<gibberish>` and can be issued here: https://github.com/settings/tokens/new
 
 ##### NOTE: The values in Profiles MUST NOT be quoted (`'`,`"`)
 
@@ -241,15 +241,13 @@ logging.getLogger('httpimport').setLevel(logging.DEBUG)
 ```
 
 ## Beware: **Huge Security Implications!**
-_Using the `httpimport` with **HTTP URLs** is highly discouraged_
+_Using the `httpimport` with plain **HTTP URLs** is highly discouraged_
   
-As HTTP traffic isn't encrypted and/or integrity checked (_unlike HTTPS_), it is trivial for a remote attacker to intercept the HTTP responses (via an _ARP MiTM_ probably), and add arbitrary _Python_ code to the downloaded _packages/modules_.
-This will directly result in _Remote Code Execution_ on your current user's context!
+As HTTP traffic can be read and changed from all intermediate hosts (_unlike HTTPS_), it is possible for a remote adversary to alter the HTTP responses consumed by `httpimport` and add arbitrary _Python_ code to the downloaded _packages/modules_. This directly results in arbitrary _Remote Code Execution_ on your current user's context of your host!
 
-In other words, you get **totally  compromised**...
+In other words, using plain HTTP through the Internet can compromise your host *without a way to notice it*.
 
 ##### You have been warned! Use only **HTTPS URLs** with `httpimport`!
-
 
 ## Contributors
 * [ldsink](https://github.com/ldsink) - The `RELOAD` flag and Bug Fixes
