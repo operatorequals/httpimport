@@ -436,12 +436,14 @@ class HttpImporter(object):
         mod.__package__ = fullname
 
         # Populate subpackage '__package__' metadata with parent package names
-        if len(fullname.split('.')[:-1]) > 1:
+        pkg_name = '.'.join(fullname.split('.')[:-1])
+        if len(fullname.split('.')[:-1]) > 1 and not self.modules[fullname]['package']:
             # recursively find the parent package
-            pkg_name = '.'.join(fullname.split('.')[:-1])
             while sys.modules[pkg_name].__package__ != pkg_name:
                 pkg_name = '.'.join(pkg_name.split('.')[:-1])
             mod.__package__ = pkg_name
+        elif not self.modules[fullname]['package']:
+            mod.__package__ = pkg_name.split('.')[0]
 
         logger.debug(
             "[*] Metadata (__package__) set to '%s' for %s '%s'" %
