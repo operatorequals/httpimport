@@ -457,11 +457,13 @@ class HttpImporter(object):
         # Execute the module/package code into the Module object
         try:
             exec(self.modules[fullname]['content'], mod.__dict__)
-        except BaseException:
+        except BaseException as e:
             if not sys_modules:
                 logger.warning(
                     "[-] Module/Package '%s' cannot be imported without adding it to sys.modules. Might contain relative imports." %
                     fullname)
+            else:
+                raise e
         return mod
 
     def load_module(self, fullname):
