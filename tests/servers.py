@@ -137,8 +137,12 @@ __SERVERS = {
         RequestHandlerClass=ProxyHandler),
 }
 
-__SERVERS['httpd_tls'].socket = ssl.wrap_socket (__SERVERS['httpd_tls'].socket, certfile=HTTPS_CERT, server_side=True)
-__SERVERS['httpd_proxy_tls'].socket = ssl.wrap_socket (__SERVERS['httpd_proxy_tls'].socket, certfile=PROXY_TLS_CERT, server_side=True)
+tls_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+tls_proxy_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+tls_context.load_cert_chain(HTTPS_CERT)
+tls_proxy_context.load_cert_chain(HTTPS_CERT)
+__SERVERS['httpd_tls'].socket = tls_context.wrap_socket (__SERVERS['httpd_tls'].socket, server_side=True)
+__SERVERS['httpd_proxy_tls'].socket = tls_proxy_context.wrap_socket (__SERVERS['httpd_proxy_tls'].socket, server_side=True)
 __SERVER_THREADS = {}
 
 RUNNING = {
