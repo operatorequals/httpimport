@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import importlib
 import io
 import json
 import logging
@@ -335,6 +336,13 @@ class HttpImporter(object):
         # Try to extract an archive from URL
         self.archive = _retrieve_archive(resp['body'], url)
 
+    def find_spec(self, fullname, path, target=None):
+        loader = self.find_module(fullname, path)
+        if loader is not None:
+            return importlib.machinery.ModuleSpec(
+            fullname, loader)
+        return None
+
     def find_module(self, fullname, path=None):
         """ Method that determines whether a module/package can be loaded through this Importer object. Part of Importer API
 
@@ -394,21 +402,9 @@ class HttpImporter(object):
         # Instruct 'import' to move on to next Importer
         return None
 
-    def _create_module(self, fullname, sys_modules=True):
-        """ Method that loads module/package code into a Python Module object
+    def create_module(self, spec):
+        fullname = spec.name
 
-        Args:
-          fullname (str): The name of the module/package to be loaded
-          sys_modules (bool, optional): Set to False to not inject the module into sys.modules
-            It will fail for packages/modules that contain relative imports
-
-        Returns:
-          (object): Module object containing the executed code of the specified module/package
-
-        """
-
-        # If the module has not been found as loadable through 'find_module'
-        # method (yet)
         if fullname not in self.modules:
             logger.debug(
                 "[*] Module '%s' has not been attempted before. Trying to load..." % fullname)
@@ -451,34 +447,51 @@ class HttpImporter(object):
              'package' if self.modules[fullname]['package'] else 'module',
              fullname))
 
+        self.modules[fullname]['module'] = mod
+        return mod
+
+    def exec_module(self, module):
+        fullname = module.__name__
+        return self._create_module(fullname)
+
+    def _create_module(self, fullname, sys_modules=True):
+        """ Method that loads module/package code into a Python Module object
+
+        Args:
+          fullname (str): The name of the module/package to be loaded
+          sys_modules (bool, optional): Set to False to not inject the module into sys.modules
+            It will fail for packages/modules that contain relative imports
+
+        Returns:
+          (object): Module object containing the executed code of the specified module/package
+
+        """
+
+        # If the module has not been found as loadable
+        # through 'find_module' method (yet)
+        if fullname not in self.modules:
+            spec = self.find_spec(fullname, "")
+            if spec is not None:
+                module = self.create_module(spec)
+            else:
+                raise ImportError
+        else:
+            module = self.modules[fullname]['module']
+
         if sys_modules:
-            sys.modules[fullname] = mod
+            sys.modules[fullname] = module
 
         # Execute the module/package code into the Module object
         try:
-            exec(self.modules[fullname]['content'], mod.__dict__)
-        except BaseException as e:
+            exec(self.modules[fullname]['content'], module.__dict__)
+        except BaseException:
             if not sys_modules:
                 logger.warning(
                     "[-] Module/Package '%s' cannot be imported without adding it to sys.modules. Might contain relative imports." %
                     fullname)
             else:
-                raise e
-        return mod
-
-    def load_module(self, fullname):
-        """ Method that loads a module into current Python Namespace. Part of Importer API
-
-        Args:
-            fullname (str): The name of the module/package to be loaded
-
-        Returns:
-            (object): Module object containing the executed code of the specified module/package
-
-        """
-        logger.info("[*] Loading module '%s' into sys.modules" % fullname)
-        mod = self._create_module(fullname)
-        return sys.modules[fullname]
+                del sys.modules[fullname]
+        return module
 
 
 class PyPIImporter(object):
