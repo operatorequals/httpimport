@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import importlib
 import io
 import json
 import logging
@@ -334,6 +335,19 @@ class HttpImporter(object):
 
         # Try to extract an archive from URL
         self.archive = _retrieve_archive(resp['body'], url)
+
+    def find_spec(self, fullname, path, target=None):
+        return importlib.machinery.ModuleSpec(
+            fullname,
+            self.find_module(fullname, path)
+            )
+
+    def create_module(self, spec):
+        return self._create_module(spec.name, sys_modules=False)
+
+    def exec_module(self, module):
+        mod_name = module.__spec__.name
+        return self.load_module(mod_name)
 
     def find_module(self, fullname, path=None):
         """ Method that determines whether a module/package can be loaded through this Importer object. Part of Importer API
