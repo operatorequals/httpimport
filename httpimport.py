@@ -563,6 +563,13 @@ releases.
             module_name)
         return None
 
+    def find_spec(self, fullname, path, target=None):
+        loader = self.find_module(fullname, path)
+        if loader is not None:
+            return importlib.machinery.ModuleSpec(
+            fullname, loader)
+        return None
+
     def _create_module(self, fullname, sys_modules=True):
         module_root = fullname.split('.')[0]
         if module_root not in self.module_importers:
@@ -570,13 +577,15 @@ releases.
                 "[*] Module '%s' has not been attempted before. Trying to find in PyPI..." % fullname)
             # Run 'find_module' and see if it returns an HttpImporter
             # object
-            if type(self.find_module(fullname)) != HttpImporter:
+            spec = self.find_spec(fullname, None)
+            if type(spec.loader) != HttpImporter:
                 logger.info(
                     "[-] Module '%s' has not been found in PyPI. Failing..." % fullname)
                 # If it is not loadable ('find_module' did not return HttpImporter):
                 raise ImportError(
                     "Module '%s' cannot be loaded from PyPI" %
                     (fullname))
+        self.module_importers[module_root].create_module(spec)
         return self.module_importers[module_root]._create_module(fullname, sys_modules)
 
     def load_module(self, fullname):
