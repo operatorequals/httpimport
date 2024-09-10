@@ -26,7 +26,7 @@ ca-verify: false
     def test_unverified_https_profile_failure(self):
         httpimport.set_profile("""
 [verify]
-ca-verify: false
+ca-verify: true
             """)
         try:
             with httpimport.remote_repo(URL, profile='verify'):
