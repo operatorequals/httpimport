@@ -7,7 +7,7 @@ _Remote_, _in-memory_ Python _package/module_ `import`ing **through HTTP/S**
 [![Downloads](https://img.shields.io/pypi/dm/httpimport)](https://pypi.org/project/httpimport/)
 
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/httpimport)
-[![PyPI version](https://badge.fury.io/py/httpimport.svg?cache=1)](https://pypi.python.org/pypi/httpimport)
+[![PyPI version](https://badge.fury.io/py/httpimport.svg)](https://pypi.python.org/pypi/httpimport)
 [![Python package](https://github.com/operatorequals/httpimport/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/operatorequals/httpimport/actions/workflows/python-package.yml)
 
 ![CPython 3](https://img.shields.io/badge/Works%20on-CPython%203-brightgreen)
