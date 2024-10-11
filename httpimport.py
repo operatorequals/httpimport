@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import importlib
+import importlib.machinery
 import io
 import json
 import logging
